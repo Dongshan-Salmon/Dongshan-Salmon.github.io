@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的雅思/托福核心單字本</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- 整體樣式 --- */
+        body {
+            font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        /* --- 主容器 --- */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            padding: 20px 30px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        /* --- 響應式表格容器 --- */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* 為了在 iOS 上更滑順 */
+        }
+
+        /* --- 表格樣式 --- */
+        .vocab-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+            white-space: nowrap; /* 防止文字換行，確保水平滾動 */
+        }
+
+        .vocab-table th, .vocab-table td {
+            border: 1px solid #dee2e6;
+            padding: 14px 16px;
+            text-align: left;
+            vertical-align: top;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .vocab-table th {
+            background-color: #f1f3f5;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .vocab-table tbody tr:nth-child(odd) {
+            background-color: #f8f9fa;
+        }
+        
+        .vocab-table tbody tr:hover {
+            background-color: #e9ecef;
+        }
+
+        /* --- 特定欄位樣式 --- */
+        .vocab-table td:nth-child(1) { 
+            font-weight: 700; 
+            color: #0056b3; 
+        } /* 單字 */
+        .vocab-table td:nth-child(2) {
+            color: #868e96;
+        } /* 詞性 */
+        
+        .vocab-table td:nth-child(4), /* 單字例句 */
+        .vocab-table td:nth-child(6) { /* 常用搭配詞 */
+            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; /* 英文使用更清晰的字體 */
+            white-space: normal; /* 讓例句可以自動換行 */
+        }
+
+        /* --- 頁腳 --- */
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>雅思 / 托福 核心單字本</h1>
+        <div class="table-responsive">
+            <table class="vocab-table">
+                <thead>
+                    <tr>
+                        <th>單字</th>
+                        <th>詞性</th>
+                        <th>中文解釋</th>
+                        <th>單字例句</th>
+                        <th>中文翻譯</th>
+                        <th>常用搭配詞</th>
+                        <th>中文翻譯</th>
+                    </tr>
+                </thead>
+                <tbody id="vocab-body">
+                    <!-- JavaScript 將會在此動態生成單字內容 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <footer>
+        <p>滑動表格以查看所有欄位。</p>
+    </footer>
+
+    <script>
+        // 當整個網頁文件載入完成後，執行此函式
+        document.addEventListener('DOMContentLoaded', function() {
+            // 使用 fetch API 讀取我們建立的 vocabulary.json 檔案
+            fetch('vocabulary.json')
+                .then(response => {
+                    // 檢查伺服器回應是否成功
+                    if (!response.ok) {
+                        throw new Error('網路回應錯誤: ' + response.statusText);
+                    }
+                    // 將回應的內容解析為 JSON 格式
+                    return response.json();
+                })
+                .then(data => {
+                    // 成功獲取資料後，呼叫 renderTable 函式來建立表格
+                    renderTable(data);
+                })
+                .catch(error => {
+                    // 如果過程中發生錯誤（例如找不到檔案或檔案格式錯誤），在主控台顯示錯誤訊息
+                    console.error('讀取單字資料時發生錯誤:', error);
+                    const tableBody = document.getElementById('vocab-body');
+                    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red; padding: 20px;">無法載入單字資料，請檢查 vocabulary.json 檔案是否存在且格式正確。</td></tr>`;
+                });
+        });
+
+        /**
+         * 根據傳入的單字資料陣列，渲染整個表格
+         * @param {Array<Object>} vocabData - 包含單字物件的陣列
+         */
+        function renderTable(vocabData) {
+            const tableBody = document.getElementById('vocab-body');
+            tableBody.innerHTML = ''; // 清空表格現有內容，以防重複載入
+
+            // 遍歷從 JSON 檔案讀取到的每一筆單字資料
+            vocabData.forEach(item => {
+                // 為每一筆資料建立一個新的表格行 <tr>
+                const row = document.createElement('tr');
+
+                // 使用樣板字面值 (template literal) 建立行中的所有儲存格
+                // 使用 `|| ''` 確保即使資料為 null 或 undefined 也不會出錯
+                row.innerHTML = `
+                    <td>${item.word || ''}</td>
+                    <td>${item.pos || ''}</td>
+                    <td>${item.definition_ch || ''}</td>
+                    <td>${item.example_en || ''}</td>
+                    <td>${item.example_ch || ''}</td>
+                    <td>${item.collocation_en || ''}</td>
+                    <td>${item.collocation_ch || ''}</td>
+                `;
+
+                // 將建立好的行添加到表格主體中
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
