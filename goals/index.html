@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>頂尖科技職涯戰略儀表板</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Stone, Muted Blue/Indigo) -->
+    <!-- Application Structure Plan: The SPA is designed as a multi-phase dashboard. A sticky top navigation allows users to switch between four distinct phases of the career plan (Foundations, Specialization, Military Service, Employment). This non-linear navigation is more user-friendly than a long report. Each phase's content, derived from the source report's tables and text, is presented in structured cards. An interactive radar chart dynamically visualizes the difficulty and focus areas of each academic phase, providing an immediate, data-driven overview of the required effort. This structure was chosen to break down a complex, long-term plan into manageable, explorable sections, enhancing user comprehension and engagement. -->
+    <!-- Visualization & Content Choices: 
+        - Report Structure -> Goal: Overall Navigation -> Method: Sticky Nav with JS-driven content switching -> Justification: Provides clear, persistent control for the user to explore the plan non-linearly.
+        - Report Tables (Learning Modules) -> Goal: Detail Learning Tasks -> Method: HTML/Tailwind Cards -> Justification: Organizes detailed information (resources, goals) into digestible, visually appealing units.
+        - Difficulty Ratings -> Goal: Visualize Effort -> Method: Chart.js Radar Chart -> Interaction: Chart updates on phase navigation -> Justification: Offers a compelling, at-a-glance comparison of the skill demands in each phase.
+        - Core Concepts (Text) -> Goal: Explain Strategy -> Method: Styled Text Blocks -> Justification: Presents narrative advice and context in a highly readable format.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8f7f4;
+            color: #3d4451;
+        }
+        .nav-item {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-item.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="app" class="container mx-auto px-4 py-8 md:py-12">
+
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-indigo-800">頂尖科技職涯戰略儀表板</h1>
+            <p class="mt-2 text-lg text-gray-600">為目標遠大的工程學生打造的互動式發展路徑</p>
+        </header>
+
+        <nav class="sticky top-0 z-10 bg-white/80 backdrop-blur-md shadow-md rounded-xl mb-12">
+            <ul class="flex items-center justify-center p-2 md:p-4 gap-2 md:gap-6">
+                <li><button class="nav-item active text-sm md:text-base font-medium text-gray-700 hover:text-indigo-600 px-3 py-2" data-phase="phase1">第一階段：奠基之年</button></li>
+                <li><button class="nav-item text-sm md:text-base font-medium text-gray-700 hover:text-indigo-600 px-3 py-2" data-phase="phase2">第二階段：專業化</button></li>
+                <li><button class="nav-item text-sm md:text-base font-medium text-gray-700 hover:text-indigo-600 px-3 py-2" data-phase="phase3">第三階段：兵役應對</button></li>
+                <li><button class="nav-item text-sm md:text-base font-medium text-gray-700 hover:text-indigo-600 px-3 py-2" data-phase="phase4">第四階段：全職就業</button></li>
+            </ul>
+        </nav>
+
+        <main>
+            <!-- Phase 1: Foundational Year -->
+            <section id="phase1" class="phase-content">
+                <div class="text-center mb-12">
+                    <h2 class="text-2xl font-bold text-indigo-700">第一階段：奠基之年 (大二暑假 - 大三學年)</h2>
+                    <p class="mt-2 text-gray-600 max-w-3xl mx-auto">此階段的核心是建立不可動搖的計算機科學基礎。挑戰在於自律與執行力，利用世界級的免費線上資源，彌補課程的不足，並將理論轉化為具體的專案成果。</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-8 items-start">
+                    <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="card p-6 md:col-span-2">
+                             <h3 class="font-bold text-lg text-indigo-600 mb-2">專題深化：您的差異化優勢</h3>
+                             <p class="text-sm text-gray-600 mb-4">將 FANUC 機械手臂專題從「自動化」提升至「系統整合」層次。透過整合 ROS (機器人作業系統)，您能展現軟硬體整合、Linux 及分散式系統的複雜技能，這在 Google 硬體部門及台積電的先進製造中極具價值。</p>
+                             <div class="mt-4">
+                                <span class="inline-block bg-indigo-100 text-indigo-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">C++</span>
+                                <span class="inline-block bg-indigo-100 text-indigo-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">ROS</span>
+                                <span class="inline-block bg-indigo-100 text-indigo-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">Linux</span>
+                             </div>
+                        </div>
+                        <div class="card p-6">
+                             <h3 class="font-bold text-lg text-indigo-600 mb-2">資料結構與演算法</h3>
+                             <p class="text-sm text-gray-600 mb-4">目標是達到演算法的流利度。透過 Princeton 與 UCSD 的課程，精通核心 DSA，並完成至少 150 題 LeetCode，建立您解決問題能力的實體證明。</p>
+                             <a href="https://www.coursera.org/learn/algorithms-part1" target="_blank" class="text-sm font-medium text-indigo-500 hover:underline">學習途徑 &rarr;</a>
+                        </div>
+                        <div class="card p-6">
+                             <h3 class="font-bold text-lg text-indigo-600 mb-2">計算機組織與架構</h3>
+                             <p class="text-sm text-gray-600 mb-4">理解軟體運行的硬體基礎。以 CMU 的 CS:APP 課程為核心，完成其經典實驗 (datalab, bomblab)，展現您深度的技術好奇心與毅力。</p>
+                              <a href="http://www.cs.cmu.edu/csd/puzzle/213-513/schedule.html" target="_blank" class="text-sm font-medium text-indigo-500 hover:underline">學習途徑 &rarr;</a>
+                        </div>
+                        <div class="card p-6">
+                             <h3 class="font-bold text-lg text-indigo-600 mb-2">計算機網路</h3>
+                             <p class="text-sm text-gray-600 mb-4">從底層學習網際網路。以 Stanford 的 CS144 課程為藍本，從零開始實作出一個完整的 TCP 協議，證明您對網路協議的深入理解。</p>
+                             <a href="https://cs144.github.io/" target="_blank" class="text-sm font-medium text-indigo-500 hover:underline">學習途徑 &rarr;</a>
+                        </div>
+                         <div class="card p-6">
+                             <h3 class="font-bold text-lg text-indigo-600 mb-2">系統性英語整合</h3>
+                             <p class="text-sm text-gray-600 mb-4">目標是專業流利度。將所有技術學習資源切換為英文，並追蹤 Martin Fowler、Google/Microsoft 工程部落格，沉浸在全球軟體工程師的溝通環境中。</p>
+                             <a href="https://martinfowler.com/" target="_blank" class="text-sm font-medium text-indigo-500 hover:underline">推薦閱讀 &rarr;</a>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 card p-6">
+                        <h3 class="text-center font-bold text-lg text-indigo-600 mb-4">階段難易度與技能焦點</h3>
+                        <div class="chart-container">
+                            <canvas id="phase1Chart"></canvas>
+                        </div>
+                         <p class="text-xs text-center text-gray-500 mt-4">此雷達圖顯示本階段各項學習主題的挑戰程度與心力投入需求。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Phase 2: Specialization -->
+            <section id="phase2" class="phase-content hidden">
+                 <div class="text-center mb-12">
+                    <h2 class="text-2xl font-bold text-green-700">第二階段：專業化與產業對接 (大三暑假 - 大四學年)</h2>
+                    <p class="mt-2 text-gray-600 max-w-3xl mx-auto">在堅實的基礎上，增加網路安全、雲端運算等高價值專業。透過考取基礎認證，向頂尖企業發出強烈信號：您不僅具備理論知識，更與當前產業需求緊密結合。</p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-8 items-start">
+                    <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="card p-6">
+                             <h3 class="font-bold text-lg text-green-600 mb-2">作業系統</h3>
+                             <p class="text-sm text-gray-600 mb-4">掌握並行、資源管理等 OS 核心概念。Georgia Tech 的進階課程將強化您的 C/C++ 系統程式設計能力，這是後端工程的先決條件。</p>
+                        </div>
+                        <div class="card p-6">
+                             <h3 class="font-bold text-lg text-green-600 mb-2">網路安全</h3>
+                             <p class="text-sm text-gray-600 mb-4">建立防禦性思維。透過 TryHackMe 學習路徑與免費的 ISC2 CC 認證，為您的履歷增添一項業界認可的關鍵技能。</p>
+                             <a href="https://www.isc2.org/Certifications/CC" target="_blank" class="text-sm font-medium text-green-500 hover:underline">認證資訊 &rarr;</a>
+                        </div>
+                        <div class="card p-6 md:col-span-2">
+                             <h3 class="font-bold text-lg text-green-600 mb-2">雲端運算</h3>
+                             <p class="text-sm text-gray-600 mb-4">精通現代基礎設施。目標是取得至少一項基礎雲端認證 (AZ-900, AWS CCP, GCP CDL)。積極參加免費的線上培訓日以獲取考試券，用零成本的方式驗證您的雲端知識。</p>
+                             <div class="mt-4">
+                                <span class="inline-block bg-green-100 text-green-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">Azure</span>
+                                <span class="inline-block bg-green-100 text-green-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">AWS</span>
+                                 <span class="inline-block bg-green-100 text-green-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">GCP</span>
+                             </div>
+                        </div>
+                         <div class="card p-6 md:col-span-2">
+                             <h3 class="font-bold text-lg text-green-600 mb-2">實習與面試準備</h3>
+                             <p class="text-sm text-gray-600 mb-4">大四上學期是申請實習的關鍵時刻。準備一份高影響力的英文履歷，並深入研究 System Design Primer。您的目標是微軟、Google、台積電的實習機會。</p>
+                             <a href="https://github.com/donnemartin/system-design-primer" target="_blank" class="text-sm font-medium text-green-500 hover:underline">系統設計寶典 &rarr;</a>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 card p-6">
+                        <h3 class="text-center font-bold text-lg text-green-600 mb-4">階段難易度與技能焦點</h3>
+                        <div class="chart-container">
+                            <canvas id="phase2Chart"></canvas>
+                        </div>
+                        <p class="text-xs text-center text-gray-500 mt-4">此階段重點轉向整合應用與產業認證，為進入職場做最後衝刺。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Phase 3: Military Service -->
+            <section id="phase3" class="phase-content hidden">
+                 <div class="text-center mb-12">
+                    <h2 class="text-2xl font-bold text-orange-700">第三階段：應對義務役 (畢業後一年)</h2>
+                    <p class="mt-2 text-gray-600 max-w-3xl mx-auto">此階段的挑戰在於心理與環境，而非技術本身。由於大學畢業不符研發替代役資格，核心策略是「知識保存」。在受限環境中保持紀律與士氣，是通往成功的關鍵。</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="card p-6">
+                        <h3 class="font-bold text-lg text-orange-600 mb-2">入伍前：「知識鎖定」</h3>
+                        <p class="text-sm text-gray-600">這是服役前的密集衝刺期。目標是將所有學過的知識「烙印」進長期記憶。重新完成困難的實驗、重刷 LeetCode，並準備好您的數位與實體「求生包」(PDF, Anki 閃卡, 實體書)。</p>
+                    </div>
+                    <div class="card p-6">
+                        <h3 class="font-bold text-lg text-orange-600 mb-2">服役中：「低科技學習」</h3>
+                        <p class="text-sm text-gray-600">唯一目標是防止技能萎縮。利用零碎時間進行紙上解題、紙上系統設計、以及最關鍵的 Anki 閃卡複習。這是對抗遺忘曲線最有效的武器。</p>
+                    </div>
+                    <div class="card p-6">
+                        <h3 class="font-bold text-lg text-orange-600 mb-2">退役後：「職涯重啟」</h3>
+                        <p class="text-sm text-gray-600">結構化的三個月計畫：<br>
+                        <b>第一個月:</b> 重新沉浸，重建肌肉記憶。<br>
+                        <b>第二個月:</b> 磨利刀鋒，進行模擬面試。<br>
+                        <b>第三個月:</b> 全面求職，客製化履歷，主動出擊。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Phase 4: Employment Strategy -->
+            <section id="phase4" class="phase-content hidden">
+                 <div class="text-center mb-12">
+                    <h2 class="text-2xl font-bold text-purple-700">第四階段：全職就業策略與長期展望</h2>
+                    <p class="mt-2 text-gray-600 max-w-3xl mx-auto">這是準備與機遇交會的最後階段。您獨特的學習旅程本身就是一個關於韌性與決心的有力故事。在複雜的地緣政治背景下，選擇雇主也是一種策略性的職涯避險。</p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h3 class="font-bold text-xl text-purple-600 mb-6">客製化申請與面試執行</h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-semibold text-gray-800">對 Google:</h4>
+                            <p class="text-sm text-gray-600 mt-1">強調 FANUC/ROS 專案、C++ 技能與系統層級理解。目標鎖定需要橋接軟硬體的團隊 (如 Pixel, Nest)。</p>
+                        </div>
+                         <div>
+                            <h4 class="font-semibold text-gray-800">對 Microsoft:</h4>
+                            <p class="text-sm text-gray-600 mt-1">強調 Azure 雲端認證、OS/並行知識。目標鎖定 AI 研發中心或 Azure 相關團隊。</p>
+                        </div>
+                         <div>
+                            <h4 class="font-semibold text-gray-800">對 TSMC:</h4>
+                            <p class="text-sm text-gray-600 mt-1">強調廣泛的語言技能 (C++, Python, Java)、對大規模系統可靠性的理解 (SRE)。目標鎖定 IT 軟體或 DevOps/SRE 職位。</p>
+                        </div>
+                    </div>
+                    <hr class="my-8">
+                    <h3 class="font-bold text-xl text-purple-600 mb-6">地緣政治與長期職涯保障</h3>
+                     <div class="space-y-4 text-sm text-gray-700">
+                        <p><b>「矽盾」因素:</b> 台灣在全球半導體鏈中的關鍵地位為區域穩定提供了經濟誘因，從而轉化為在台積電等公司的職涯安全。</p>
+                        <p><b>跨國公司優勢:</b> 在 Google 或微軟工作是進入全球人才生態系統的門票，提供了潛在的國際調動機會，是對區域不穩定性的重要個人避險。</p>
+                        <p><b>技能組合保障:</b> 您建立的雲端、安全、分散式系統等核心技能在全球範圍內都具高需求，使您的技能組合具備高度可移植性。</p>
+                     </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const phaseButtons = document.querySelectorAll('.nav-item');
+            const phaseContents = document.querySelectorAll('.phase-content');
+            let activeChart = null;
+
+            const chartData = {
+                phase1: {
+                    labels: ['演算法', '計算機架構', '計算機網路', '專題深化', '作業系統', '網路安全', '雲端運算'],
+                    data: [8, 9, 8, 7, 0, 0, 0],
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                },
+                phase2: {
+                    labels: ['演算法', '計算機架構', '計算機網路', '專題深化', '作業系統', '網路安全', '雲端運算'],
+                    data: [7, 4, 3, 5, 8, 7, 6],
+                    borderColor: 'rgba(22, 163, 74, 1)',
+                    backgroundColor: 'rgba(22, 163, 74, 0.2)',
+                }
+            };
+
+            function createRadarChart(canvasId, dataConfig) {
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                if (activeChart && activeChart.canvas.id === canvasId) {
+                    activeChart.destroy();
+                }
+                
+                const chartConfig = {
+                    type: 'radar',
+                    data: {
+                        labels: dataConfig.labels,
+                        datasets: [{
+                            label: '技能挑戰指數',
+                            data: dataConfig.data,
+                            fill: true,
+                            backgroundColor: dataConfig.backgroundColor,
+                            borderColor: dataConfig.borderColor,
+                            pointBackgroundColor: dataConfig.borderColor,
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: dataConfig.borderColor
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                pointLabels: {
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    },
+                                    color: '#3d4451'
+                                },
+                                ticks: {
+                                    backdropColor: 'transparent',
+                                    stepSize: 2,
+                                    max: 10,
+                                    min: 0
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                };
+
+                if (canvasId.startsWith('phase')) {
+                    activeChart = new Chart(ctx, chartConfig);
+                }
+            }
+
+            function setActivePhase(phaseId) {
+                phaseButtons.forEach(button => {
+                    if (button.dataset.phase === phaseId) {
+                        button.classList.add('active');
+                    } else {
+                        button.classList.remove('active');
+                    }
+                });
+
+                phaseContents.forEach(content => {
+                    if (content.id === phaseId) {
+                        content.classList.remove('hidden');
+                    } else {
+                        content.classList.add('hidden');
+                    }
+                });
+                
+                // Update chart
+                if (phaseId === 'phase1' || phaseId === 'phase2') {
+                    const chartCanvasId = `${phaseId}Chart`;
+                    if (document.getElementById(chartCanvasId)){
+                        createRadarChart(chartCanvasId, chartData[phaseId]);
+                    }
+                }
+            }
+
+            phaseButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    setActivePhase(this.dataset.phase);
+                });
+            });
+
+            // Initial load
+            setActivePhase('phase1');
+        });
+    </script>
+</body>
+</html>
