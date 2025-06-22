@@ -1,1 +1,65 @@
-
+[
+  {
+    "word": "organize",
+    "pos": "動詞",
+    "definition_ch": "組織、安排",
+    "example_en": "She was hired to organize the company's annual conference.",
+    "example_ch": "她被雇來組織公司的年度會議。",
+    "collocation_en": "organize an event",
+    "collocation_ch": "組織一個活動"
+  },
+  {
+    "word": "compensate",
+    "pos": "動詞",
+    "definition_ch": "補償、賠償",
+    "example_en": "The company promised to compensate the workers for their injuries.",
+    "example_ch": "公司承諾賠償工人的受傷。",
+    "collocation_en": "compensate for a loss",
+    "collocation_ch": "補償損失"
+  },
+  {
+    "word": "admission",
+    "pos": "名詞",
+    "definition_ch": "進入許可、承認",
+    "example_en": "Admission to the museum is free on Sundays.",
+    "example_ch": "博物館在星期日免費入場。",
+    "collocation_en": "gain admission to",
+    "collocation_ch": "獲得進入許可"
+  },
+  {
+    "word": "orientation",
+    "pos": "名詞",
+    "definition_ch": "定向、培訓",
+    "example_en": "The orientation for new employees will be held next Monday.",
+    "example_ch": "新員工的培訓將於下週一舉行。",
+    "collocation_en": "orientation program",
+    "collocation_ch": "定向計劃"
+  },
+  {
+    "word": "indulgence",
+    "pos": "名詞",
+    "definition_ch": "放縱、沉溺",
+    "example_en": "His indulgence in sweets led to significant weight gain.",
+    "example_ch": "他放縱於甜食導致體重顯著增加。",
+    "collocation_en": "self-indulgence",
+    "collocation_ch": "自我放縱"
+  },
+  {
+    "word": "analyze",
+    "pos": "動詞",
+    "definition_ch": "分析",
+    "example_en": "We need to analyze the data carefully before making a decision.",
+    "example_ch": "在做決定前，我們需要仔細分析數據。",
+    "collocation_en": "analyze the results",
+    "collocation_ch": "分析結果"
+  },
+  {
+    "word": "factor",
+    "pos": "名詞",
+    "definition_ch": "因素、要素",
+    "example_en": "Cost is a major factor in our decision.",
+    "example_ch": "成本是我們決策的一個主要因素。",
+    "collocation_en": "a key factor",
+    "collocation_ch": "一個關鍵因素"
+  }
+]
