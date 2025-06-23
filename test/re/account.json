@@ -1,0 +1,26 @@
+[
+    {
+        "username": "admin",
+        "password": "1234",
+        "name": "陳管理員",
+        "email": "admin@example.com",
+        "bio": "我是系統管理員，擁有至高無上的權力。負責維護系統的正常運行。",
+        "profileImage": "https://placehold.co/200x200/7c3aed/ffffff?text=Admin"
+    },
+    {
+        "username": "user1",
+        "password": "5678",
+        "name": "王小明",
+        "email": "user1@example.com",
+        "bio": "我是一位熱愛攝影與旅行的探險家，喜歡用鏡頭記錄生活中的每一個美好瞬間。",
+        "profileImage": "https://placehold.co/200x200/f87171/ffffff?text=User1"
+    },
+    {
+        "username": "lisa",
+        "password": "9999",
+        "name": "Lisa Chen",
+        "email": "lisa.c@example.com",
+        "bio": "我是一位前端工程師，對打造美觀且易用的使用者介面充滿熱情。",
+        "profileImage": "https://placehold.co/200x200/34d399/ffffff?text=Lisa"
+    }
+]
