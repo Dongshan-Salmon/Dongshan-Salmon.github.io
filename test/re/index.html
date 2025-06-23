@@ -22,7 +22,9 @@
           method: "POST",
           body: JSON.stringify({ email, password }),
           headers: {
-            "Content-Type": "application/json"
+            // ▼▼▼▼▼▼ 唯一的修改在這裡 ▼▼▼▼▼▼
+            "Content-Type": "text/plain;charset=utf-8", 
+            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
           }
         });
   
@@ -35,6 +37,6 @@
         console.error("Fetch 錯誤：", err);
       }
     }
-  </script>
+</script>
 </body>
 </html>
