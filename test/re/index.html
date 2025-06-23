@@ -29,8 +29,14 @@
     <!-- 主容器 -->
     <div class="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden">
         <div class="p-8 md:p-12">
+            
+            <!-- 訊息顯示區域 -->
+            <div id="messageBox" class="p-4 mb-4 text-sm rounded-lg hidden" role="alert">
+                <!-- 錯誤或成功訊息將顯示在此處 -->
+            </div>
+
             <!-- 頁首 -->
-            <div class="text-center mb-8">
+            <div class="text-center mb-4">
                 <h1 class="text-3xl font-bold text-white tracking-tight">歡迎回來</h1>
                 <p class="text-gray-300 mt-2">請登入以繼續</p>
             </div>
@@ -122,28 +128,27 @@
     <!-- JAVASCRIPT LOGIC STARTS HERE -->
     <!-- ====================================================== -->
     <script>
-        // ########## 重要：請將此處的 URL 換成您自己的 Google Apps Script Web App 網址 ##########
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxMhWQNqO_n3sxQcwO_cLZWTd-dwYMKgi9vVrUhlAmzvHQWTQSZTY_qnRL3YwxSkdq3/exec'; 
-        // ##############################################################################
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxMhWQNqO_n3sxQcwO_cLZWTd-dwYMKgi9vVrUhlAmzvHQWTQSZTY_qnRL3YwxSkdq3/exec';
 
         document.addEventListener('DOMContentLoaded', () => {
             const loginForm = document.getElementById('loginForm');
             const registerLink = document.getElementById('registerLink');
             const loginButton = document.getElementById('loginButton');
+            const messageBox = document.getElementById('messageBox');
 
             // 處理登入邏輯
             loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault(); // 防止表單重新載入頁面
+                e.preventDefault();
+                displayMessage('', 'clear'); // 清除舊訊息
                 
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
 
                 if (!email || !password) {
-                    alert('請輸入電子郵件和密碼。');
+                    displayMessage('請輸入電子郵件和密碼。', 'error');
                     return;
                 }
                 
-                // 顯示處理中狀態，禁用按鈕
                 setButtonLoading(loginButton, true, '登入中...');
 
                 const requestBody = {
@@ -153,17 +158,16 @@
 
                 try {
                     const response = await apiCall(requestBody);
-                    alert(response.message); // 顯示成功或失敗訊息
+                    displayMessage(response.message, response.status);
                     if(response.status === 'success') {
-                        // 登入成功後，可以在這裡進行頁面跳轉或其他操作
-                        // 例如： window.location.href = 'your-dashboard.html'; 
                         console.log('登入成功！');
+                        // 登入成功後，可跳轉到其他頁面
+                        // setTimeout(() => window.location.href = 'your-dashboard.html', 1500);
                     }
                 } catch (error) {
-                    alert('與伺服器連線失敗，請檢查網路或稍後再試。');
+                    displayMessage('與伺服器連線失敗或回應格式錯誤。請檢查瀏覽器控制台以獲取更多資訊。', 'error');
                     console.error('Login Error:', error);
                 } finally {
-                    // 無論成功或失敗，最後都恢復按鈕狀態
                     setButtonLoading(loginButton, false, '登入');
                 }
             });
@@ -171,14 +175,15 @@
             // 處理註冊邏輯
             registerLink.addEventListener('click', async (e) => {
                 e.preventDefault();
+                displayMessage('', 'clear'); // 清除舊訊息
 
                 const email = prompt("請輸入您要註冊的電子郵件：");
-                if (!email) return; // 如果使用者取消輸入
+                if (!email) return;
 
                 const password = prompt("請為您的新帳戶設定密碼：");
-                if (!password) return; // 如果使用者取消輸入
+                if (!password) return;
 
-                alert('正在處理註冊請求，請稍候...');
+                displayMessage('正在處理註冊請求...', 'info');
 
                 const requestBody = {
                     action: 'register',
@@ -187,47 +192,51 @@
                 
                 try {
                     const response = await apiCall(requestBody);
-                    alert(response.message); // 顯示註冊結果
+                    displayMessage(response.message, response.status);
                 } catch (error) {
-                    alert('與伺服器連線失敗，請檢查網路或稍後再試。');
+                    displayMessage('與伺服器連線失敗或回應格式錯誤。', 'error');
                     console.error('Registration Error:', error);
                 }
             });
         });
 
-        /**
-         * 統一的 API 呼叫函數，用於與 Google Apps Script 溝通
-         * @param {object} body - 要傳送到後端的請求內容 (包含 action 和 payload)
-         * @returns {Promise<object>} - 從後端 API 回傳的 Promise 物件
-         */
         async function apiCall(body) {
             const response = await fetch(WEB_APP_URL, {
                 method: 'POST',
-                // mode: 'cors', // 一般情況下 fetch 會自動處理跨域請求，通常不需手動設定
                 headers: {
-                    // Google Apps Script Web App 的 doPost 需要純文字格式的內容
                     'Content-Type': 'text/plain;charset=utf-8', 
                 },
                 body: JSON.stringify(body),
-                redirect: 'follow' // GAS Web App 部署後可能會進行重新導向，需要跟隨
+                redirect: 'follow'
             });
-            // 將回應的 JSON 字串解析為 JavaScript 物件
             return response.json();
         }
 
-        /**
-         * 設定按鈕的載入狀態，提供使用者回饋
-         * @param {HTMLElement} button - 要設定的按鈕元素
-         * @param {boolean} isLoading - 是否為載入中
-         * @param {string} text - 按鈕要顯示的文字
-         */
         function setButtonLoading(button, isLoading, text) {
             button.disabled = isLoading;
             button.textContent = text;
-            if (isLoading) {
-                button.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                button.classList.remove('opacity-50', 'cursor-not-allowed');
+            isLoading ? button.classList.add('opacity-50', 'cursor-not-allowed')
+                      : button.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        
+        function displayMessage(message, type) {
+            messageBox.textContent = message;
+            // 重設樣式
+            messageBox.className = 'p-4 mb-4 text-sm rounded-lg';
+
+            switch(type) {
+                case 'success':
+                    messageBox.classList.add('bg-green-100', 'text-green-800');
+                    break;
+                case 'error':
+                     messageBox.classList.add('bg-red-100', 'text-red-800');
+                    break;
+                case 'info':
+                    messageBox.classList.add('bg-blue-100', 'text-blue-800');
+                    break;
+                case 'clear':
+                    messageBox.classList.add('hidden');
+                    break;
             }
         }
     </script>
