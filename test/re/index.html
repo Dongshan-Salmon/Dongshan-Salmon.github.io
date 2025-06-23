@@ -1,42 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>登入系統</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入您的帳戶</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts 的 Inter 字體 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 自訂字體 */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* 簡單的背景漸層效果 */
+        .gradient-bg {
+            background-color: #f3f4f6;
+            background-image: radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0px, transparent 50%),
+                              radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0px, transparent 50%),
+                              radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0px, transparent 50%);
+        }
+    </style>
 </head>
-<body>
-  <h2>登入</h2>
-  <input type="text" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="密碼">
-  <button onclick="login()">登入</button>
+<body class="gradient-bg flex items-center justify-center min-h-screen p-4">
 
-  <p id="result"></p>
-  <script>
-    async function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const result = document.getElementById("result");
-  
-      try {
-        const res = await fetch("https://script.google.com/macros/s/AKfycbxMhWQNqO_n3sxQcwO_cLZWTd-dwYMKgi9vVrUhlAmzvHQWTQSZTY_qnRL3YwxSkdq3/exec", {
-          method: "POST",
-          body: JSON.stringify({ email, password }),
-          headers: {
-            // ▼▼▼▼▼▼ 唯一的修改在這裡 ▼▼▼▼▼▼
-            "Content-Type": "text/plain;charset=utf-8", 
-            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-          }
-        });
-  
-        if (!res.ok) throw new Error("HTTP 錯誤: " + res.status);
-  
-        const data = await res.json();
-        result.innerText = data.success ? "✅ 登入成功" : "❌ 帳號或密碼錯誤";
-      } catch (err) {
-        result.innerText = "⚠️ 錯誤：" + err.message;
-        console.error("Fetch 錯誤：", err);
-      }
-    }
-</script>
+    <!-- 主容器 -->
+    <div class="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden">
+        <div class="p-8 md:p-12">
+            <!-- 頁首 -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-white tracking-tight">歡迎回來</h1>
+                <p class="text-gray-300 mt-2">請登入以繼續</p>
+            </div>
+
+            <!-- 登入表單 -->
+            <form action="#" method="POST" class="space-y-6">
+                <!-- 電子郵件輸入框 -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-200">
+                        電子郵件地址
+                    </label>
+                    <div class="mt-1">
+                        <input id="email" name="email" type="email" autocomplete="email" required
+                               class="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+                    </div>
+                </div>
+
+                <!-- 密碼輸入框 -->
+                <div>
+                    <div class="flex items-center justify-between">
+                        <label for="password" class="block text-sm font-medium text-gray-200">
+                            密碼
+                        </label>
+                        <div class="text-sm">
+                            <a href="#" class="font-medium text-blue-400 hover:text-blue-300 transition-colors duration-300">
+                                忘記密碼？
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mt-1">
+                        <input id="password" name="password" type="password" autocomplete="current-password" required
+                               class="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+                    </div>
+                </div>
+
+                <!-- 記住我 -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember-me" name="remember-me" type="checkbox"
+                               class="h-4 w-4 bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500 rounded">
+                        <label for="remember-me" class="ml-2 block text-sm text-gray-300">
+                            記住我
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 提交按鈕 -->
+                <div>
+                    <button type="submit"
+                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 transition-all duration-300 transform hover:scale-105">
+                        登入
+                    </button>
+                </div>
+            </form>
+
+            <!-- 分隔線 -->
+            <div class="mt-8 relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-600"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-gray-800 text-gray-400 rounded-full">或使用其他方式登入</span>
+                </div>
+            </div>
+
+            <!-- 其他登入方式 -->
+            <div class="mt-6 grid grid-cols-1 gap-4">
+                <a href="#" class="w-full inline-flex justify-center py-3 px-4 border border-gray-600 rounded-lg shadow-sm bg-white/10 text-sm font-medium text-white hover:bg-white/20 transition-all duration-300">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/>
+                    </svg>
+                    <span>使用 Google 登入</span>
+                </a>
+            </div>
+
+            <!-- 註冊連結 -->
+            <div class="mt-8 text-center text-sm text-gray-400">
+                <p>
+                    還沒有帳戶？
+                    <a href="#" class="font-medium text-blue-400 hover:text-blue-300 transition-colors duration-300">
+                        立即註冊
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
