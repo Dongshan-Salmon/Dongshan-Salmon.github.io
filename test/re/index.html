@@ -142,11 +142,13 @@
                 if(response.status === 'success') {
                     renderPersonalPageView(response.data || { email: email }); 
                 } else {
+                    // 如果後端回傳了定義好的錯誤訊息
                     displayMessage(response.message, response.status);
                     setButtonLoading(loginButton, false, '登入');
                 }
             } catch (error) {
-                displayMessage('與伺服器連線失敗或回應格式錯誤。', 'error');
+                // 如果是網路層級或 fetch 本身的錯誤
+                displayMessage(error.message, 'error');
                 console.error('Login Error:', error);
                 setButtonLoading(loginButton, false, '登入');
             }
@@ -159,25 +161,36 @@
             }, 100);
         }
 
-        // === 輔助函數 ===
+        // === 輔助函數 (已更新) ===
         async function apiCall(body) {
             try {
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(body),
-                    redirect: 'follow'
+                    // mode: 'cors' 是預設值，不用特別寫
+                    redirect: 'follow' 
                 });
-                const rawText = await response.text();
-                // 嘗試解析 JSON，如果失敗，也能看到原始文字
-                try {
-                    return JSON.parse(rawText);
-                } catch(e) {
-                    console.error("無法解析 JSON 回應:", rawText);
-                    throw new Error("伺服器回應非預期格式。");
+
+                // 檢查伺服器回應是否成功 (HTTP 狀態碼 200-299)
+                if (!response.ok) {
+                    // 如果伺服器回傳了錯誤狀態碼 (如 404, 500)，拋出錯誤
+                    throw new Error(`伺服器錯誤: HTTP 狀態碼 ${response.status}`);
                 }
+                
+                // 嘗試解析 JSON
+                const textResponse = await response.text();
+                try {
+                    return JSON.parse(textResponse);
+                } catch (e) {
+                    console.error("無法解析伺服器回應為 JSON:", textResponse);
+                    throw new Error("伺服器回應了非預期的格式，可能是 HTML 錯誤頁面。");
+                }
+
             } catch (error) {
-                console.error("apiCall 函數出錯:", error);
+                // 捕捉網路錯誤 (例如 CORS 錯誤, DNS 問題) 或上面拋出的錯誤
+                console.error("apiCall 函數發生錯誤:", error);
+                // 將錯誤重新拋出，讓呼叫它的地方 (handleLogin) 可以捕捉到
                 throw error;
             }
         }
