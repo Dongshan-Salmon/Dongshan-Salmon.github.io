@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的應用程式</title>
+    <title>登入您的帳戶</title>
+    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts 的 Inter 字體 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* 自訂字體 */
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* 簡單的背景漸層效果 */
         .gradient-bg {
             background-color: #f3f4f6;
             background-image: radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0px, transparent 50%),
@@ -24,52 +24,44 @@
 </head>
 <body class="gradient-bg flex items-center justify-center min-h-screen p-4">
 
+    <!-- 主應用程式容器 (SPA 的 "舞台") -->
     <div id="app-container" class="w-full max-w-md">
-        </div>
+        <!-- 登入或個人頁面內容將會被動態插入到此處 -->
+    </div>
 
 
+    <!-- ====================================================== -->
+    <!-- JAVASCRIPT LOGIC STARTS HERE -->
+    <!-- ====================================================== -->
     <script>
         // === HTML 模板區域 ===
-        // 將登入畫面的 HTML 結構儲存成模板字串
+
+        // 登入畫面的 HTML 模板
         const loginTemplate = `
             <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden">
                 <div class="p-8 md:p-12">
                     <div id="messageBox" class="p-4 mb-4 text-sm rounded-lg hidden" role="alert"></div>
-
                     <div class="text-center mb-4">
                         <h1 class="text-3xl font-bold text-white tracking-tight">歡迎回來</h1>
                         <p class="text-gray-300 mt-2">請登入以繼續</p>
                     </div>
-
                     <form id="loginForm" class="space-y-6">
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-200">電子郵件地址</label>
                             <div class="mt-1">
                                 <input id="email" name="email" type="email" autocomplete="email" required
-                                    class="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+                                    class="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
                         </div>
-
                         <div>
                             <div class="flex items-center justify-between">
                                 <label for="password" class="block text-sm font-medium text-gray-200">密碼</label>
-                                <div class="text-sm">
-                                    <a href="#" class="font-medium text-blue-400 hover:text-blue-300 transition-colors duration-300">忘記密碼？</a>
-                                </div>
                             </div>
                             <div class="mt-1">
                                 <input id="password" name="password" type="password" autocomplete="current-password" required
-                                    class="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+                                    class="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
                         </div>
-
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center">
-                                <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500 rounded">
-                                <label for="remember-me" class="ml-2 block text-sm text-gray-300">記住我</label>
-                            </div>
-                        </div>
-
                         <div>
                             <button type="submit" id="loginButton"
                                 class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 transition-all duration-300 transform hover:scale-105">
@@ -77,23 +69,10 @@
                             </button>
                         </div>
                     </form>
-
-                    <div class="mt-8 relative">
-                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-600"></div></div>
-                        <div class="relative flex justify-center text-sm"><span class="px-2 bg-gray-800 text-gray-400 rounded-full">或使用其他方式登入</span></div>
-                    </div>
-
-                    <div class="mt-6 grid grid-cols-1 gap-4">
-                        <a href="#" class="w-full inline-flex justify-center py-3 px-4 border border-gray-600 rounded-lg shadow-sm bg-white/10 text-sm font-medium text-white hover:bg-white/20 transition-all duration-300">
-                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
-                            <span>使用 Google 登入</span>
-                        </a>
-                    </div>
                     <div class="mt-8 text-center text-sm text-gray-400">
                         <p>
                             還沒有帳戶？
-                            <!-- 將 href="#" 修改為 "register.html" -->
-                            <a href="register.html" id="registerLink" class="font-medium text-blue-400 hover:text-blue-300 transition-colors duration-300">
+                            <a href="register.html" class="font-medium text-blue-400 hover:text-blue-300 transition-colors duration-300">
                                 立即註冊
                             </a>
                         </p>
@@ -102,23 +81,19 @@
             </div>
         `;
 
-        // 個人頁面模板 - 這是新增的部分
+        // 個人頁面模板
         const personalPageTemplate = (userData) => `
             <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden">
                 <div class="p-8 md:p-12 text-white">
                     <div id="messageBox" class="p-4 mb-4 text-sm rounded-lg hidden" role="alert"></div>
-
                     <div class="text-center">
                         <h1 class="text-3xl font-bold tracking-tight">個人頁面</h1>
                         <p class="text-gray-300 mt-2">歡迎回來, <span class="font-semibold text-blue-300">${userData.email || '使用者'}</span>!</p>
                     </div>
-
                     <div class="mt-8 border-t border-gray-600 pt-8">
                         <h2 class="text-xl font-semibold mb-4">帳戶資訊</h2>
                         <p class="text-gray-300">這裡是您的個人儀表板。</p>
-                        <p class="text-gray-300 mt-2">您可以在這裡查看您的活動、設定等。</p>
-                        </div>
-
+                    </div>
                     <div class="mt-8">
                          <button id="logoutButton" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-red-500 transition-all duration-300">
                             登出
@@ -136,28 +111,18 @@
 
         // === 畫面渲染函數 ===
         
-        /**
-         * 渲染登入畫面
-         */
+        /** 渲染登入畫面 */
         function renderLoginView() {
             appContainer.innerHTML = loginTemplate;
-
-            // 重新綁定事件監聽器，因為 DOM 已經被替換
+            // 為登入表單綁定提交事件
             const loginForm = document.getElementById('loginForm');
-            const registerLink = document.getElementById('registerLink');
-            
             loginForm.addEventListener('submit', handleLogin);
-            registerLink.addEventListener('click', handleRegister);
         }
 
-        /**
-         * 渲染個人頁面
-         * @param {object} userData - 從後端獲取的使用者資料
-         */
+        /** 渲染個人頁面 */
         function renderPersonalPageView(userData) {
             appContainer.innerHTML = personalPageTemplate(userData);
-            
-            // 綁定登出按鈕的事件
+            // 為登出按鈕綁定點擊事件
             const logoutButton = document.getElementById('logoutButton');
             logoutButton.addEventListener('click', handleLogout);
         }
@@ -165,9 +130,7 @@
 
         // === 事件處理函數 ===
 
-        /**
-         * 處理登入邏輯
-         */
+        /** 處理登入邏輯 */
         async function handleLogin(e) {
             e.preventDefault();
             displayMessage('', 'clear');
@@ -190,92 +153,39 @@
 
             try {
                 const response = await apiCall(requestBody);
-                
                 if(response.status === 'success') {
-                    // ** 關鍵改動：登入成功，渲染個人頁面 **
-                    // 假設後端回應的資料格式為 { status: 'success', ..., data: { email: '...' } }
-                    renderPersonalPageView(response.data || {}); 
+                    // 登入成功，渲染個人頁面
+                    renderPersonalPageView(response.data || { email: email }); 
                 } else {
                     displayMessage(response.message, response.status);
+                    setButtonLoading(loginButton, false, '登入');
                 }
             } catch (error) {
                 displayMessage('與伺服器連線失敗或回應格式錯誤。', 'error');
                 console.error('Login Error:', error);
-            } finally {
-                // 如果登入失敗，按鈕狀態會在這裡恢復。如果成功，按鈕已不存在，所以不會出錯。
-                if (document.getElementById('loginButton')) {
-                   setButtonLoading(loginButton, false, '登入');
-                }
+                setButtonLoading(loginButton, false, '登入');
             }
         }
         
-        /**
-         * 處理註冊邏輯
-         */
-        async function handleRegister(e) {
-            e.preventDefault();
-            displayMessage('', 'clear'); // 清除舊訊息
-
-            const email = prompt("請輸入您要註冊的電子郵件：");
-            if (!email) return;
-
-            const password = prompt("請為您的新帳戶設定密碼：");
-            if (!password) return;
-
-            displayMessage('正在處理註冊請求...', 'info');
-
-            const requestBody = {
-                action: 'register',
-                payload: { email, password }
-            };
-            
-            try {
-                const response = await apiCall(requestBody);
-                displayMessage(response.message, response.status);
-            } catch (error) {
-                displayMessage('與伺服器連線失敗或回應格式錯誤。', 'error');
-                console.error('Registration Error:', error);
-            }
-        }
-        
-        /**
-         * 處理登出邏輯
-         */
+        /** 處理登出邏輯 */
         function handleLogout() {
-            // 這裡可以選擇性地呼叫後端 API 來使 token 失效
-            console.log('使用者已登出');
-            
-            // 切換回登入畫面
             renderLoginView();
-            
-            // 延遲一小段時間再顯示訊息，確保 DOM 更新完畢
             setTimeout(() => {
                 displayMessage('您已成功登出。', 'success');
             }, 100);
         }
         
 
-        // === 輔助函數 (與您原本的程式碼相同) ===
+        // === 輔助函數 ===
 
-        /**
-         * 統一的 API 呼叫函數
-         */
         async function apiCall(body) {
-            try {
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(body),
-                    redirect: 'follow'
-                });
-                const rawText = await response.text();
-                console.log("從伺服器收到的原始回應:", rawText);
-                const jsonResponse = JSON.parse(rawText);
-                return jsonResponse;
-            } catch (error) {
-                console.error("apiCall 函數出錯:", error);
-                throw new Error("API 呼叫失敗或伺服器回應非預期格式。");
-            }
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(body),
+                redirect: 'follow'
+            });
+            return response.json();
         }
 
         function setButtonLoading(button, isLoading, text) {
@@ -288,7 +198,7 @@
         
         function displayMessage(message, type) {
             const messageBox = document.getElementById('messageBox');
-            if (!messageBox) return; // 如果找不到 messageBox (例如在切換畫面的瞬間)，就直接返回
+            if (!messageBox) return;
 
             if (type === 'clear' || !message) {
                 messageBox.classList.add('hidden');
@@ -296,7 +206,7 @@
             }
             
             messageBox.textContent = message;
-            messageBox.className = 'p-4 mb-4 text-sm rounded-lg'; // 重設樣式
+            messageBox.className = 'p-4 mb-4 text-sm rounded-lg';
 
             switch(type) {
                 case 'success':
@@ -309,10 +219,8 @@
             }
         }
         
-        
         // === 應用程式初始化 ===
         document.addEventListener('DOMContentLoaded', () => {
-            // 頁面載入時，首先渲染登入畫面
             renderLoginView();
         });
 
