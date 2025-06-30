@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class=""> <!-- 'dark' class will be toggled here -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的技術部落格</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        // 為了讓 Tailwind 的深色模式正常運作
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            /* 將游標隱藏，以滑鼠跟隨特效取代 */
+            cursor: none;
+        }
+        /* 自定義滾動條樣式 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        .dark ::-webkit-scrollbar-track { background: #1a202c; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px;}
+        .dark ::-webkit-scrollbar-thumb { background: #4a5568; }
+        ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #718096; }
+
+        /* 滑鼠跟隨特效的樣式 */
+        #cursor-follower {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 44px;
+            height: 44px;
+            background-color: rgba(156, 163, 175, 0.4); /* 預設為灰色 */
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none; /* 讓滑鼠可以點擊下方的元素 */
+            transform: translate(-50%, -50%);
+            transition: width 0.3s ease, height 0.3s ease, transform 0.3s ease;
+            mix-blend-mode: overlay; /* 這是實現顏色混合的關鍵 */
+        }
+        
+        /* 當滑鼠點擊時的放大效果 */
+        #cursor-follower.clicked {
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 60px;
+            height: 60px;
+        }
+
+        /* 針對連結和按鈕的懸停效果 */
+        a:hover, button:hover {
+            cursor: none; /* 確保在懸停時也不顯示原生游標 */
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-400 text-base lg:text-lg leading-relaxed">
+
+    <!-- 滑鼠跟隨的 HTML 元素 -->
+    <div id="cursor-follower"></div>
+
+    <div class="max-w-screen-xl mx-auto lg:flex">
+        <!-- 左側固定側邊欄 (更窄) -->
+        <aside class="lg:w-1/4 lg:h-screen lg:sticky lg:top-0 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-800">
+            <div>
+                <!-- 個人資訊 -->
+                <div class="text-left">
+                    <img src="https://placehold.co/96x96/e2e8f0/4a5568?text=Avatar" alt="作者頭像" class="rounded-full w-20 h-20 mb-5">
+                    <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">您的名字</h1>
+                    <p class="mt-1 text-gray-600 dark:text-gray-400">網頁開發者 & 技術愛好者</p>
+                    <p class="mt-4 text-sm text-gray-500">
+                        這裡是我的數位花園，記錄著我的學習、思考與創造。
+                    </p>
+                </div>
+
+                <!-- 導覽列 (簡化) -->
+                <nav class="mt-10">
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">首頁</a></li>
+                        <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">關於我</a></li>
+                        <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">標籤</a></li>
+                        <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">作品集</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- 社群連結 & 主題切換 (簡化) -->
+            <div class="mt-10 lg:mt-0 flex items-center space-x-4">
+                 <a href="#" title="GitHub" class="text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.49.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.943.359.308.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" /></svg>
+                </a>
+                <a href="#" title="Email" class="text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                </a>
+                <button id="theme-toggle" class="text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors" title="切換主題">
+                     <svg id="theme-toggle-dark-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                     <svg id="theme-toggle-light-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 右側可滾動內容 (更寬) -->
+        <main class="w-full lg:w-3/4 p-8 lg:p-16">
+            <h2 class="text-3xl font-semibold mb-10 text-gray-900 dark:text-white">文章列表</h2>
+            
+            <section>
+                <!-- 文章列表 -->
+                <ul>
+                    <li class="py-6">
+                        <a href="#" class="block group">
+                            <div class="flex items-center space-x-4">
+                                <time datetime="2025-06-30" class="text-sm text-gray-500">2025-06-30</time>
+                                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                    如何使用 Tailwind CSS 打造一個漂亮的網站
+                                </h3>
+                            </div>
+                        </a>
+                    </li>
+                    <hr class="border-gray-200 dark:border-gray-800"/>
+                     <li class="py-6">
+                        <a href="#" class="block group">
+                            <div class="flex items-center space-x-4">
+                                <time datetime="2025-06-22" class="text-sm text-gray-500">2025-06-22</time>
+                                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                    JavaScript ES6+ 的五個實用技巧
+                                </h3>
+                            </div>
+                        </a>
+                    </li>
+                    <hr class="border-gray-200 dark:border-gray-800"/>
+                     <li class="py-6">
+                        <a href="#" class="block group">
+                            <div class="flex items-center space-x-4">
+                                <time datetime="2025-06-15" class="text-sm text-gray-500">2025-06-15</time>
+                                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                    第一次設定 GitHub Pages 個人部落格就上手
+                                </h3>
+                            </div>
+                        </a>
+                    </li>
+                     <hr class="border-gray-200 dark:border-gray-800"/>
+                </ul>
+            </section>
+            
+            <!-- 頁尾 (簡化) -->
+            <footer class="mt-16 text-center text-gray-400 dark:text-gray-600 text-xs">
+                <p>&copy; 2025 您的名字</p>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        // --- 主題切換功能 ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                themeToggleDarkIcon.classList.remove('hidden');
+                themeToggleLightIcon.classList.add('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeToggleDarkIcon.classList.add('hidden');
+                themeToggleLightIcon.classList.remove('hidden');
+            }
+        }
+
+        const savedTheme = localStorage.getItem('color-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (savedTheme) {
+            applyTheme(savedTheme);
+        } else {
+            applyTheme(prefersDark ? 'dark' : 'light');
+        }
+
+        themeToggleBtn.addEventListener('click', function() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            localStorage.setItem('color-theme', newTheme);
+            applyTheme(newTheme);
+        });
+
+        // --- 滑鼠跟隨特效 ---
+        const follower = document.getElementById('cursor-follower');
+        
+        // 使用 requestAnimationFrame 來優化性能
+        let mouseX = 0;
+        let mouseY = 0;
+        let followerX = 0;
+        let followerY = 0;
+        const speed = 0.1; // 控制跟隨的平滑度，數值越小越滑順
+
+        function animate() {
+            // 計算緩動位置
+            followerX += (mouseX - followerX) * speed;
+            followerY += (mouseY - followerY) * speed;
+            
+            // 使用 transform 來移動，性能更好
+            follower.style.transform = `translate(${followerX - follower.offsetWidth / 2}px, ${followerY - follower.offsetHeight / 2}px)`;
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('mousemove', e => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        window.addEventListener('mousedown', () => {
+            follower.classList.add('clicked');
+        });
+
+        window.addEventListener('mouseup', () => {
+            follower.classList.remove('clicked');
+        });
+
+        // 啟動動畫循環
+        animate();
+    </script>
+</body>
+</html>
