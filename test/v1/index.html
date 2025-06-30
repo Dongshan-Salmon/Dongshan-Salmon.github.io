@@ -3,150 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>簡易繪圖板</title>
-    <!-- 引入 Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>曲線無限滾動文字</title>
+    <!-- 引入外部字型，以符合原始設計 -->
+    <link rel="stylesheet" href="https://use.typekit.net/sgr1dax.css">
     <style>
-        /* 確保 body 和 html 佔滿整個視窗高度，以便置中 */
-        html, body {
-            height: 100%;
+        /* 基本樣式重設 */
+        body {
             margin: 0;
-            padding: 0;
-            font-family: 'Inter', sans-serif; /* 使用較美觀的字體 */
-        }
-        /* 自訂控制項的樣式，使其在行動裝置上有更好的觸控體驗 */
-        .control-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 0 10px;
-        }
-        .control-item label {
-            margin-bottom: 5px;
-            font-size: 0.875rem;
-            color: #4a5568;
-        }
-        input[type="color"] {
-            -webkit-appearance: none;
-            width: 50px;
-            height: 50px;
-            border: none;
-            padding: 0;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        input[type="color"]::-webkit-color-swatch-wrapper {
-            padding: 0;
-        }
-        input[type="color"]::-webkit-color-swatch {
-            border: 2px solid #e2e8f0;
-            border-radius: 50%;
+            font-family: sans-serif;
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center">
+<body>
+    <!-- React 應用程式的根容器 -->
+    <div id="root"></div>
 
-    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-4xl m-4">
-        <!-- 繪圖區域 -->
-        <canvas id="draw" class="border-2 border-gray-200 rounded-xl w-full cursor-crosshair"></canvas>
+    <!-- 
+      使用 type="module" 來載入 ES 模組，
+      這讓我們可以直接在瀏覽器中使用 import 語法。
+    -->
+    <script type="module">
+        // 從 esm.sh CDN 匯入 React、ReactDOM 和 styled-components
+        import React from "https://esm.sh/react";
+        import ReactDOM from "https://esm.sh/react-dom/client";
+        import styled from "https://esm.sh/styled-components";
 
-        <!-- 控制項區域 -->
-        <div id="controls" class="mt-6 flex flex-wrap items-center justify-center gap-4">
-            <div class="control-item">
-                <label for="color">顏色</label>
-                <input type="color" id="color" value="#000000">
-            </div>
+        // 解構常用的 React Hooks
+        const { useRef, useEffect, useState } = React;
 
-            <div class="control-item flex-grow max-w-xs">
-                <label for="size">畫筆大小</label>
-                <input type="range" id="size" min="1" max="100" value="10" class="w-full">
-            </div>
-
-            <button id="clear" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-300">
-                清除畫布
-            </button>
-        </div>
-    </div>
-
-    <script>
-        const canvas = document.getElementById('draw');
-        const ctx = canvas.getContext('2d');
-
-        const colorPicker = document.getElementById('color');
-        const sizeSlider = document.getElementById('size');
-        const clearButton = document.getElementById('clear');
-
-        // --- 狀態變數 ---
-        // isDrawing 用來判斷滑鼠是否正在按下的狀態
-        let isDrawing = false;
-        // lastX 和 lastY 用來儲存上一個點的座標
-        let lastX = 0;
-        let lastY = 0;
-
-        // --- 核心繪圖函式 ---
-        function draw(e) {
-            // 如果滑鼠沒有按下，就直接返回，不進行繪圖
-            if (!isDrawing) return;
-
-            // 設置畫筆樣式
-            ctx.strokeStyle = colorPicker.value;
-            ctx.lineWidth = sizeSlider.value;
-            ctx.lineJoin = 'round'; // 線條交接處的樣式
-            ctx.lineCap = 'round';   // 線條末端的樣式
-
-            // 開始繪圖路徑
-            ctx.beginPath();
-            // 移動到上一個點
-            ctx.moveTo(lastX, lastY);
-            // 畫一條線到當前滑鼠的位置
-            // e.offsetX 和 e.offsetY 可以取得滑鼠相對於 canvas 左上角的位置
-            ctx.lineTo(e.offsetX, e.offsetY);
-            ctx.stroke(); // 執行繪圖
-
-            // 更新上一個點的座標
-            [lastX, lastY] = [e.offsetX, e.offsetY];
-        }
-
-        // --- 事件監聽器 ---
-
-        // 當滑鼠在 canvas 上按下時
-        canvas.addEventListener('mousedown', (e) => {
-            isDrawing = true;
-            // 更新起始點座標
-            [lastX, lastY] = [e.offsetX, e.offsetY];
-        });
+        // --- Styled Components 定義 ---
+        // 使用 styled-components 來建立帶有樣式的元件
         
-        // 當滑鼠在 canvas 上移動時
-        canvas.addEventListener('mousemove', draw);
+        // SVG 容器的樣式
+        const Svg = styled.svg`
+            user-select: none;
+            width: 100%;
+            aspect-ratio: 100 / 12;
+            overflow: visible;
+            display: block;
+            font-size: 9.6rem;
+            font-weight: 700;
+            /* 這裡使用 'Sequel 100 Wide' 字型，已在 HTML head 中透過 link 引入 */
+            font-family: "sequel-100-wide", sans-serif;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            line-height: 1;
+        `;
 
-        // 當滑鼠放開時
-        canvas.addEventListener('mouseup', () => isDrawing = false);
+        // 最外層的背景容器樣式
+        const Jacket = styled.div`
+            background: #dfe0e1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        `;
 
-        // 當滑鼠移出 canvas 範圍時 (避免線條一直畫到外面)
-        canvas.addEventListener('mouseout', () => isDrawing = false);
+        // --- React 組件 ---
+        const App = () => {
+            // 要在跑馬燈中重複顯示的文字
+            const marqueeText = 'Designer ✦ Developer ✦ Director ✦ ';
 
-        // 清除按鈕的點擊事件
-        clearButton.addEventListener('click', () => {
-            // 清除整個 canvas 的內容
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        });
+            // 文字所依附的曲線路徑的唯一 ID
+            const pathId = 'customCurve';
 
-        // --- 響應式設定 ---
-        function resizeCanvas() {
-            // 儲存當前的繪圖內容，避免縮放時遺失
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            // 讓 canvas 的畫布解析度與其 CSS 顯示的寬高一致
-            // 這可以避免繪圖時產生模糊或變形
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            // 將儲存的內容重新繪製回去
-            ctx.putImageData(imageData, 0, 0);
-        }
+            // 每個重複文字實例之間的距離（以像素為單位）
+            const textSpacing = 2480;
 
-        // 頁面載入時和視窗大小改變時，都重新設定 canvas 大小
-        window.addEventListener('load', resizeCanvas);
-        window.addEventListener('resize', resizeCanvas);
+            // 用於儲存每個 tspan 元素的參照 (ref)，以便控制動畫
+            const tspansRef = useRef([]);
 
+            // 用於儲存曲線路徑總長度的 state
+            const [pathLength, setPathLength] = useState(1000);
+
+            // 用於存取 SVG path 元素的參照 (ref)
+            const pathRef = useRef(null);
+
+            // useEffect: 計算並儲存曲線路徑的實際長度
+            useEffect(() => {
+                if (pathRef.current) {
+                    // getTotalLength() 會返回 SVG 路徑的總長度
+                    const length = pathRef.current.getTotalLength();
+                    setPathLength(length);
+                }
+            }, []);
+
+            // useEffect: 建立連續的跑馬燈動畫
+            useEffect(() => {
+                let animationFrame;
+
+                // 此函式會移動每個 tspan 來創造滾動效果
+                const move = () => {
+                    tspansRef.current.forEach((tspan, i) => {
+                        if (!tspan) return; // 如果 ref 不存在則跳過
+
+                        // 獲取目前的 x 座標並向左移動 1 像素
+                        let x = parseFloat(tspan.getAttribute('x'));
+                        x -= 1.5; // 這個值控制動畫速度
+
+                        // 如果文字已經移出左側太遠，就將其重設到最右端
+                        if (x < -textSpacing) {
+                            // 計算在隊列末端的位置
+                            x += tspansRef.current.length * textSpacing;
+                        }
+
+                        // 更新 tspan 的 x 屬性
+                        tspan.setAttribute('x', x);
+                    });
+
+                    // 使用 requestAnimationFrame 來安排下一幀，以產生流暢的動畫
+                    animationFrame = requestAnimationFrame(move);
+                };
+
+                // 啟動動畫
+                move();
+
+                // 清理函式：當組件卸載時，取消動畫以避免記憶體洩漏
+                return () => cancelAnimationFrame(animationFrame);
+            }, []); // 空依賴陣列表示此 effect 只在組件掛載時執行一次
+
+            // 計算需要重複多少次文字才能填滿整個路徑
+            // 額外增加 2 次重複以確保無縫循環
+            const repeats = Math.ceil(pathLength / textSpacing) + 2;
+
+            return (
+                <Jacket>
+                    <Svg viewBox="0 0 1440 120">
+                        <defs>
+                            {/* 定義文字將要跟隨的 SVG 路徑
+                              d 屬性定義了一個二次貝茲曲線: M(起點) Q(控制點, 終點)
+                            */}
+                            <path ref={pathRef} id={pathId} d="M-100,40 Q720, 120 1540,40" fill="none" stroke="transparent" />
+                        </defs>
+
+                        {/* 將跟隨曲線路徑的文字元素 */}
+                        <text fill="#222" fontWeight="bold">
+                            {/* textPath 讓文字跟隨指定的路徑 */}
+                            <textPath href={`#${pathId}`}>
+                                {/* 建立多個文字實例以實現無縫循環 */}
+                                {Array.from({ length: repeats }).map((_, i) => (
+                                    <tspan
+                                        key={i}
+                                        x={i * textSpacing} // 定位每個文字實例
+                                        ref={el => (tspansRef.current[i] = el)} // 儲存 ref 以便控制動畫
+                                    >
+                                        {marqueeText}
+                                    </tspan>
+                                ))}
+                            </textPath>
+                        </text>
+                    </Svg>
+                </Jacket>
+            );
+        };
+
+        // --- 渲染 React 應用程式 ---
+        
+        // 找到根容器
+        const rootElement = document.getElementById("root");
+        // 建立 React 的根
+        const root = ReactDOM.createRoot(rootElement);
+        // 將 App 組件渲染到根容器中
+        root.render(<App />);
     </script>
 </body>
 </html>
