@@ -1,171 +1,22 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>曲線無限滾動文字</title>
-    <!-- 引入外部字型，以符合原始設計 -->
-    <link rel="stylesheet" href="https://use.typekit.net/sgr1dax.css">
-    <style>
-        /* 基本樣式重設 */
-        body {
-            margin: 0;
-            font-family: sans-serif;
-        }
-    </style>
-</head>
-<body>
-    <!-- React 應用程式的根容器 -->
-    <div id="root"></div>
-
-    <!-- 
-      使用 type="module" 來載入 ES 模組，
-      這讓我們可以直接在瀏覽器中使用 import 語法。
-    -->
-    <script type="module">
-        // 從 esm.sh CDN 匯入 React、ReactDOM 和 styled-components
-        import React from "https://esm.sh/react";
-        import ReactDOM from "https://esm.sh/react-dom/client";
-        import styled from "https://esm.sh/styled-components";
-
-        // 解構常用的 React Hooks
-        const { useRef, useEffect, useState } = React;
-
-        // --- Styled Components 定義 ---
-        // 使用 styled-components 來建立帶有樣式的元件
-        
-        // SVG 容器的樣式
-        const Svg = styled.svg`
-            user-select: none;
-            width: 100%;
-            aspect-ratio: 100 / 12;
-            overflow: visible;
-            display: block;
-            font-size: 9.6rem;
-            font-weight: 700;
-            /* 這裡使用 'Sequel 100 Wide' 字型，已在 HTML head 中透過 link 引入 */
-            font-family: "sequel-100-wide", sans-serif;
-            letter-spacing: 5px;
-            text-transform: uppercase;
-            line-height: 1;
-        `;
-
-        // 最外層的背景容器樣式
-        const Jacket = styled.div`
-            background: #dfe0e1;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-        `;
-
-        // --- React 組件 ---
-        const App = () => {
-            // 要在跑馬燈中重複顯示的文字
-            const marqueeText = 'Designer ✦ Developer ✦ Director ✦ ';
-
-            // 文字所依附的曲線路徑的唯一 ID
-            const pathId = 'customCurve';
-
-            // 每個重複文字實例之間的距離（以像素為單位）
-            const textSpacing = 2480;
-
-            // 用於儲存每個 tspan 元素的參照 (ref)，以便控制動畫
-            const tspansRef = useRef([]);
-
-            // 用於儲存曲線路徑總長度的 state
-            const [pathLength, setPathLength] = useState(1000);
-
-            // 用於存取 SVG path 元素的參照 (ref)
-            const pathRef = useRef(null);
-
-            // useEffect: 計算並儲存曲線路徑的實際長度
-            useEffect(() => {
-                if (pathRef.current) {
-                    // getTotalLength() 會返回 SVG 路徑的總長度
-                    const length = pathRef.current.getTotalLength();
-                    setPathLength(length);
-                }
-            }, []);
-
-            // useEffect: 建立連續的跑馬燈動畫
-            useEffect(() => {
-                let animationFrame;
-
-                // 此函式會移動每個 tspan 來創造滾動效果
-                const move = () => {
-                    tspansRef.current.forEach((tspan, i) => {
-                        if (!tspan) return; // 如果 ref 不存在則跳過
-
-                        // 獲取目前的 x 座標並向左移動 1 像素
-                        let x = parseFloat(tspan.getAttribute('x'));
-                        x -= 1.5; // 這個值控制動畫速度
-
-                        // 如果文字已經移出左側太遠，就將其重設到最右端
-                        if (x < -textSpacing) {
-                            // 計算在隊列末端的位置
-                            x += tspansRef.current.length * textSpacing;
-                        }
-
-                        // 更新 tspan 的 x 屬性
-                        tspan.setAttribute('x', x);
-                    });
-
-                    // 使用 requestAnimationFrame 來安排下一幀，以產生流暢的動畫
-                    animationFrame = requestAnimationFrame(move);
-                };
-
-                // 啟動動畫
-                move();
-
-                // 清理函式：當組件卸載時，取消動畫以避免記憶體洩漏
-                return () => cancelAnimationFrame(animationFrame);
-            }, []); // 空依賴陣列表示此 effect 只在組件掛載時執行一次
-
-            // 計算需要重複多少次文字才能填滿整個路徑
-            // 額外增加 2 次重複以確保無縫循環
-            const repeats = Math.ceil(pathLength / textSpacing) + 2;
-
-            return (
-                <Jacket>
-                    <Svg viewBox="0 0 1440 120">
-                        <defs>
-                            {/* 定義文字將要跟隨的 SVG 路徑
-                              d 屬性定義了一個二次貝茲曲線: M(起點) Q(控制點, 終點)
-                            */}
-                            <path ref={pathRef} id={pathId} d="M-100,40 Q720, 120 1540,40" fill="none" stroke="transparent" />
-                        </defs>
-
-                        {/* 將跟隨曲線路徑的文字元素 */}
-                        <text fill="#222" fontWeight="bold">
-                            {/* textPath 讓文字跟隨指定的路徑 */}
-                            <textPath href={`#${pathId}`}>
-                                {/* 建立多個文字實例以實現無縫循環 */}
-                                {Array.from({ length: repeats }).map((_, i) => (
-                                    <tspan
-                                        key={i}
-                                        x={i * textSpacing} // 定位每個文字實例
-                                        ref={el => (tspansRef.current[i] = el)} // 儲存 ref 以便控制動畫
-                                    >
-                                        {marqueeText}
-                                    </tspan>
-                                ))}
-                            </textPath>
-                        </text>
-                    </Svg>
-                </Jacket>
-            );
-        };
-
-        // --- 渲染 React 應用程式 ---
-        
-        // 找到根容器
-        const rootElement = document.getElementById("root");
-        // 建立 React 的根
-        const root = ReactDOM.createRoot(rootElement);
-        // 將 App 組件渲染到根容器中
-        root.render(<App />);
-    </script>
-</body>
-</html>
+<div id="root">
+  <div class="w-[100%] h-[100%] md:w-[95%] md:h-[95%] m-auto absolute inset-0 border-4 border-[#d3d3d3] rounded-xl overflow-hidden">
+    <div class="absolute bottom-[20px] left-[20px] z-[1000] flex gap-[16px]"><button class="bg-[#eeeeee] text-black px-[12px] py-[8px] rounded-[4px] border-none cursor-pointer flex items-center gap-[8px]"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg></button><button class="bg-[#eeeeee] text-black px-[12px] py-[8px] rounded-[4px] border-none cursor-pointer flex items-center gap-[8px]"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-github">
+          <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
+          <path d="M9 18c-4.51 2-5-2-7-2"></path>
+        </svg></button></div>
+    <div class="relative w-full h-full">
+      <div class="absolute w-full h-full z-0"><canvas class="absolute top-0 left-0 w-full h-full block border-none" style="background: rgb(5, 5, 5);" width="1055" height="817"></canvas></div>
+      <div class="absolute bottom-[20px] right-[20px] z-[1000] text-white">
+        <h1 class="text-[16px] font-regular w-fit" style="letter-spacing: -0.6px;">built by <a href="https://codepen.io/DedaloD" target="_blank" rel="noopener noreferrer" class="underline font-semibold underline-offset-4">ddux|Den Dionigi</a></h1>
+      </div>
+      <div class="absolute w-full h-full z-1">
+        <div style="position: relative; width: 100%; height: 100%; overflow: hidden; pointer-events: auto;">
+          <div style="width: 100%; height: 100%;"><canvas style="display: block; width: 1055.05px; height: 816.594px;" data-engine="three.js r160" width="2110" height="1633"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
