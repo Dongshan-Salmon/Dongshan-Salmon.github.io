@@ -21,8 +21,6 @@
             font-family: 'Noto Sans TC', 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            /* 將游標隱藏，以滑鼠跟隨特效取代 */
-            cursor: none;
         }
         /* 自定義滾動條樣式 */
         ::-webkit-scrollbar { width: 6px; }
@@ -32,40 +30,9 @@
         .dark ::-webkit-scrollbar-thumb { background: #4a5568; }
         ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
         .dark ::-webkit-scrollbar-thumb:hover { background: #718096; }
-
-        /* 滑鼠跟隨特效的樣式 */
-        #cursor-follower {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 44px;
-            height: 44px;
-            background-color: rgba(156, 163, 175, 0.4); /* 預設為灰色 */
-            border-radius: 50%;
-            z-index: 9999;
-            pointer-events: none; /* 讓滑鼠可以點擊下方的元素 */
-            transform: translate(-50%, -50%);
-            transition: width 0.3s ease, height 0.3s ease, transform 0.3s ease;
-            mix-blend-mode: overlay; /* 這是實現顏色混合的關鍵 */
-        }
-        
-        /* 當滑鼠點擊時的放大效果 */
-        #cursor-follower.clicked {
-            transform: translate(-50%, -50%) scale(0.8);
-            width: 60px;
-            height: 60px;
-        }
-
-        /* 針對連結和按鈕的懸停效果 */
-        a:hover, button:hover {
-            cursor: none; /* 確保在懸停時也不顯示原生游標 */
-        }
     </style>
 </head>
 <body class="bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-400 text-base lg:text-lg leading-relaxed">
-
-    <!-- 滑鼠跟隨的 HTML 元素 -->
-    <div id="cursor-follower"></div>
 
     <div class="max-w-screen-xl mx-auto lg:flex">
         <!-- 左側固定側邊欄 (更窄) -->
@@ -158,7 +125,6 @@
     </div>
 
     <script>
-        // --- 主題切換功能 ---
         const themeToggleBtn = document.getElementById('theme-toggle');
         const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
@@ -190,43 +156,6 @@
             localStorage.setItem('color-theme', newTheme);
             applyTheme(newTheme);
         });
-
-        // --- 滑鼠跟隨特效 ---
-        const follower = document.getElementById('cursor-follower');
-        
-        // 使用 requestAnimationFrame 來優化性能
-        let mouseX = 0;
-        let mouseY = 0;
-        let followerX = 0;
-        let followerY = 0;
-        const speed = 0.1; // 控制跟隨的平滑度，數值越小越滑順
-
-        function animate() {
-            // 計算緩動位置
-            followerX += (mouseX - followerX) * speed;
-            followerY += (mouseY - followerY) * speed;
-            
-            // 使用 transform 來移動，性能更好
-            follower.style.transform = `translate(${followerX - follower.offsetWidth / 2}px, ${followerY - follower.offsetHeight / 2}px)`;
-
-            requestAnimationFrame(animate);
-        }
-
-        window.addEventListener('mousemove', e => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        });
-
-        window.addEventListener('mousedown', () => {
-            follower.classList.add('clicked');
-        });
-
-        window.addEventListener('mouseup', () => {
-            follower.classList.remove('clicked');
-        });
-
-        // 啟動動畫循環
-        animate();
     </script>
 </body>
 </html>
