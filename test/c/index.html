@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流程圖編輯器</title>
+    <style>
+        /* 整體頁面樣式 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* 主容器 */
+        .main-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 側邊欄 */
+        #sidebar {
+            width: 200px;
+            background-color: #ffffff;
+            border-right: 1px solid #dcdfe6;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        #sidebar:hover {
+            opacity: 1;
+        }
+
+        #sidebar h3 {
+            margin-top: 0;
+            color: #303133;
+        }
+
+        .sidebar-module {
+            width: 120px;
+            height: 60px;
+            background-color: #409eff;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            cursor: grab;
+            margin-bottom: 15px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .sidebar-module:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* 工作區 */
+        #workspace-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #workspace {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        #svg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .workspace-module {
+            position: absolute;
+            width: 150px;
+            min-height: 80px;
+            background-color: #ffffff;
+            border: 2px solid #a0cfff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            cursor: move;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            box-sizing: border-box;
+            resize: both;
+            overflow: hidden; /* 重要：隱藏跑出邊界的文字 */
+        }
+        
+        .workspace-module.selected {
+            border-color: #f56c6c;
+            box-shadow: 0 0 0 3px rgba(245, 108, 108, 0.4);
+        }
+
+        .module-text {
+            /* **[修改]** 讓文字可以被JS控制位置 */
+            position: relative; 
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            outline: none;
+            word-wrap: break-word;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .connector-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #1e90ff;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: crosshair;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        
+        .workspace-module:hover .connector-dot {
+            display: block;
+        }
+        
+        .connector-dot.top { top: 0; left: 50%; }
+        .connector-dot.right { top: 50%; left: 100%; }
+        .connector-dot.bottom { top: 100%; left: 50%; }
+        .connector-dot.left { top: 50%; left: 0; }
+
+        /* 右鍵選單 */
+        #context-menu {
+            position: absolute;
+            display: none;
+            background-color: white;
+            border: 1px solid #dcdfe6;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+            padding: 8px 0;
+            z-index: 1000;
+            min-width: 150px;
+        }
+
+        #context-menu ul { list-style: none; margin: 0; padding: 0; }
+        #context-menu li { padding: 10px 20px; cursor: pointer; color: #606266; font-size: 14px; }
+        #context-menu li:hover { background-color: #ecf5ff; color: #409eff; }
+        #context-menu li.separator { height: 1px; background-color: #e4e7ed; margin: 5px 0; padding: 0; }
+
+        /* **[新增]** 動作編輯器 Modal 樣式 */
+        #action-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 400px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .modal-content h3 { margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .modal-buttons { text-align: right; }
+        .modal-buttons button {
+            padding: 8px 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        #btn-save-action { background-color: #409eff; color: white; border-color: #409eff;}
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div id="sidebar">
+            <h3>模塊</h3>
+            <div class="sidebar-module" draggable="true">矩形</div>
+        </div>
+        <div id="workspace-container">
+            <svg id="svg-layer"></svg>
+            <div id="workspace"></div>
+        </div>
+    </div>
+
+    <div id="context-menu">
+        <ul>
+            <li data-action="edit-text">輸入文字</li>
+            <li data-action="write-action">編寫動作</li>
+            <li class="separator"></li>
+            <li data-action="copy">複製</li>
+            <li data-action="paste">貼上</li>
+            <li class="separator"></li>
+            <li data-action="delete">刪除</li>
+        </ul>
+    </div>
+    
+    <div id="action-modal" style="display: none;">
+        <div class="modal-content">
+            <h3>編寫動作</h3>
+            <div class="form-group">
+                <label for="action-type">動作類型 (積木)</label>
+                <select id="action-type">
+                    <option value="none">無</option>
+                    <option value="marquee">跑馬燈效果</option>
+                </select>
+            </div>
+            <div id="marquee-settings" class="form-group" style="display: none;">
+                <label for="marquee-speed">速度 (像素/幀)</label>
+                <input type="number" id="marquee-speed" value="1" min="0.1" step="0.1">
+            </div>
+            <div class="modal-buttons">
+                <button id="btn-cancel-action">取消</button>
+                <button id="btn-save-action">儲存</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... (既有的 DOM 元素獲取)
+            const sidebarModule = document.querySelector('.sidebar-module');
+            const workspace = document.getElementById('workspace');
+            const contextMenu = document.getElementById('context-menu');
+            const svgLayer = document.getElementById('svg-layer');
+
+            // **[新增]** Modal 相關元素
+            const actionModal = document.getElementById('action-modal');
+            const actionTypeSelect = document.getElementById('action-type');
+            const marqueeSettings = document.getElementById('marquee-settings');
+            const marqueeSpeedInput = document.getElementById('marquee-speed');
+            const btnSaveAction = document.getElementById('btn-save-action');
+            const btnCancelAction = document.getElementById('btn-cancel-action');
+
+            // 狀態變數
+            let activeModule = null;
+            let offsetX, offsetY;
+            let isDrawingLine = false;
+            let startLineInfo = null;
+            let tempLine = null;
+            let rightClickedModule = null;
+            let copiedModuleData = null;
+            let moduleForAction = null; // **[新增]** 正在設定動作的模塊
+
+            // **[新增]** 儲存所有模塊動畫狀態的物件
+            const animationStates = {};
+
+            // ... (既有的拖放、創建模塊等功能)
+            sidebarModule.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', 'new_module'); });
+            workspace.addEventListener('dragover', (e) => { e.preventDefault(); });
+            workspace.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.getData('text/plain') === 'new_module') {
+                    const rect = workspace.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const newModule = createModule(x, y, '新模塊');
+                    // 為新模塊初始化動畫狀態
+                    animationStates[newModule.id] = { currentX: 0 };
+                }
+            });
+
+            function createModule(x, y, text) {
+                const id = `module-${Date.now()}`;
+                const moduleEl = document.createElement('div');
+                moduleEl.id = id;
+                moduleEl.className = 'workspace-module';
+                moduleEl.style.left = `${x}px`;
+                moduleEl.style.top = `${y}px`;
+                
+                const textContainer = document.createElement('div'); // 新增文字容器
+                textContainer.className = 'module-text';
+
+                const textSpan = document.createElement('span'); // 文字本身用 span 包起來
+                textSpan.textContent = text;
+                textContainer.appendChild(textSpan);
+
+                moduleEl.appendChild(textContainer);
+
+                ['top', 'right', 'bottom', 'left'].forEach(pos => {
+                    const dot = document.createElement('div');
+                    dot.className = `connector-dot ${pos}`;
+                    dot.dataset.moduleId = id;
+                    dot.dataset.position = pos;
+                    moduleEl.appendChild(dot);
+                });
+                
+                workspace.appendChild(moduleEl);
+                return moduleEl;
+            }
+
+
+            // ... (既有的 mousedown, 畫線邏輯等)
+            workspace.addEventListener('mousedown', (e) => {
+                if (e.target === workspace) { clearSelection(); hideContextMenu(); return; }
+                const module = e.target.closest('.workspace-module');
+                if (!module) return;
+                if (e.button === 0) {
+                    const rect = module.getBoundingClientRect();
+                    const isResizing = e.clientX > rect.right - 15 && e.clientY > rect.bottom - 15;
+                    if (isResizing) {
+                        clearSelection(); module.classList.add('selected'); activeModule = null; hideContextMenu();
+                        return;
+                    }
+                    if (e.target.classList.contains('connector-dot')) { e.stopPropagation(); startDrawingLine(e); return; }
+                    clearSelection(); module.classList.add('selected'); activeModule = module;
+                    offsetX = e.clientX - rect.left;
+                    offsetY = e.clientY - rect.top;
+                    hideContextMenu();
+                }
+                else if (e.button === 2) {
+                    rightClickedModule = module;
+                    showContextMenu(e.clientX, e.clientY);
+                }
+            });
+
+            // --- **[修改]** 右鍵選單邏輯 ---
+            contextMenu.addEventListener('click', (e) => {
+                const action = e.target.dataset.action;
+                if (!action || !rightClickedModule) return;
+
+                const textSpan = rightClickedModule.querySelector('.module-text span');
+
+                switch (action) {
+                    case 'edit-text':
+                        textSpan.contentEditable = true;
+                        textSpan.focus();
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(textSpan);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        textSpan.addEventListener('blur', () => { textSpan.contentEditable = false; }, { once: true });
+                        break;
+                    case 'write-action':
+                        // **[修改]** 顯示動作編輯器 Modal
+                        moduleForAction = rightClickedModule;
+                        showActionModal(moduleForAction);
+                        break;
+                    case 'delete':
+                         // **[新增]** 刪除時清理動畫狀態
+                        delete animationStates[rightClickedModule.id];
+                        const linesToDelete = svgLayer.querySelectorAll(`line[data-start-module="${rightClickedModule.id}"], line[data-end-module="${rightClickedModule.id}"]`);
+                        linesToDelete.forEach(line => line.remove());
+                        rightClickedModule.remove();
+                        break;
+                    // ... (複製貼上等)
+                    case 'copy':
+                        copiedModuleData = { text: textSpan.textContent, width: rightClickedModule.style.width, height: rightClickedModule.style.height, };
+                        alert('模塊已複製！');
+                        break;
+                    case 'paste':
+                        if (copiedModuleData) {
+                            const x = rightClickedModule.offsetLeft + 20;
+                            const y = rightClickedModule.offsetTop + 20;
+                            const newModule = createModule(x, y, copiedModuleData.text);
+                            newModule.style.width = copiedModuleData.width;
+                            newModule.style.height = copiedModuleData.height;
+                             // 為新模塊初始化動畫狀態
+                            animationStates[newModule.id] = { currentX: 0 };
+                        } else { alert('剪貼板為空！'); }
+                        break;
+
+                }
+                hideContextMenu();
+            });
+
+            // --- **[新增]** 動作編輯器 Modal 相關邏輯 ---
+
+            function showActionModal(module) {
+                const actionData = module.dataset.action ? JSON.parse(module.dataset.action) : { type: 'none' };
+                actionTypeSelect.value = actionData.type;
+                if (actionData.type === 'marquee') {
+                    marqueeSpeedInput.value = actionData.speed || 1;
+                    marqueeSettings.style.display = 'block';
+                } else {
+                    marqueeSettings.style.display = 'none';
+                }
+                actionModal.style.display = 'flex';
+            }
+            
+            function hideActionModal() {
+                actionModal.style.display = 'none';
+                moduleForAction = null;
+            }
+
+            actionTypeSelect.addEventListener('change', () => {
+                marqueeSettings.style.display = (actionTypeSelect.value === 'marquee') ? 'block' : 'none';
+            });
+
+            btnSaveAction.addEventListener('click', () => {
+                if (!moduleForAction) return;
+
+                const actionType = actionTypeSelect.value;
+                const textContainer = moduleForAction.querySelector('.module-text');
+                const textSpan = textContainer.querySelector('span');
+
+                if (actionType === 'none') {
+                    delete moduleForAction.dataset.action;
+                    textContainer.style.justifyContent = 'center'; // 恢復置中
+                    textSpan.style.transform = 'translateX(0px)';
+                    textSpan.style.whiteSpace = 'normal';
+                } else if (actionType === 'marquee') {
+                    const actionData = {
+                        type: 'marquee',
+                        speed: parseFloat(marqueeSpeedInput.value) || 1,
+                    };
+                    moduleForAction.dataset.action = JSON.stringify(actionData);
+                    textContainer.style.justifyContent = 'flex-start'; // 改為靠左對齊以方便計算
+                    textSpan.style.whiteSpace = 'nowrap'; // 文字不換行
+                }
+                hideActionModal();
+            });
+
+            btnCancelAction.addEventListener('click', hideActionModal);
+
+            // --- **[新增]** 全域動畫循環 ---
+
+            function gameLoop() {
+                const animatedModules = workspace.querySelectorAll('.workspace-module[data-action]');
+
+                animatedModules.forEach(module => {
+                    const actionData = JSON.parse(module.dataset.action);
+                    const textSpan = module.querySelector('.module-text span');
+                    if (!textSpan) return;
+
+                    if (actionData.type === 'marquee') {
+                        const state = animationStates[module.id] || { currentX: 0 };
+                        
+                        // 更新位置
+                        state.currentX += actionData.speed;
+                        
+                        // 檢查邊界
+                        const moduleWidth = module.clientWidth;
+                        const textWidth = textSpan.offsetWidth;
+
+                        if (state.currentX > moduleWidth) {
+                            state.currentX = -textWidth; // 從左邊重新出現
+                        }
+                        
+                        // 應用變換
+                        textSpan.style.transform = `translateX(${state.currentX}px)`;
+                        
+                        // 保存狀態
+                        animationStates[module.id] = state;
+                    }
+                });
+
+                requestAnimationFrame(gameLoop); // 請求下一幀
+            }
+
+            // 啟動動畫循環
+            gameLoop();
+            
+            // ... (既有的輔助函數)
+            function hideContextMenu() { if (contextMenu.style.display === 'block') { contextMenu.style.display = 'none'; rightClickedModule = null; } }
+            function clearSelection() { const selected = document.querySelector('.workspace-module.selected'); if (selected) { selected.classList.remove('selected'); } }
+            // ... (既有的畫線邏輯)
+            function startDrawingLine(e){ isDrawingLine = true; const dot = e.target; const moduleId = dot.dataset.moduleId; const position = dot.dataset.position; const startCoords = getConnectorCoords(moduleId, position); startLineInfo = { moduleId, position }; tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'line'); tempLine.setAttribute('x1', startCoords.x); tempLine.setAttribute('y1', startCoords.y); tempLine.setAttribute('x2', startCoords.x); tempLine.setAttribute('y2', startCoords.y); tempLine.setAttribute('stroke', '#f56c6c'); tempLine.setAttribute('stroke-width', '3'); tempLine.setAttribute('stroke-dasharray', '5,5'); svgLayer.appendChild(tempLine); }
+            function endDrawingLine(e){ const endDot = e.target.closest('.connector-dot'); if (endDot && startLineInfo && endDot.dataset.moduleId !== startLineInfo.moduleId) { const endModuleId = endDot.dataset.moduleId; const endPosition = endDot.dataset.position; createPermanentLine(startLineInfo, { moduleId: endModuleId, position: endPosition }); } isDrawingLine = false; startLineInfo = null; if (tempLine) { svgLayer.removeChild(tempLine); tempLine = null; } }
+            function createPermanentLine(startInfo, endInfo){ const line = document.createElementNS('http://www.w3.org/2000/svg', 'line'); const startCoords = getConnectorCoords(startInfo.moduleId, startInfo.position); const endCoords = getConnectorCoords(endInfo.moduleId, endInfo.position); line.setAttribute('x1', startCoords.x); line.setAttribute('y1', startCoords.y); line.setAttribute('x2', endCoords.x); line.setAttribute('y2', endCoords.y); line.setAttribute('stroke', '#606266'); line.setAttribute('stroke-width', '2'); line.dataset.startModule = startInfo.moduleId; line.dataset.startPosition = startInfo.position; line.dataset.endModule = endInfo.moduleId; line.dataset.endPosition = endInfo.position; svgLayer.appendChild(line); }
+            function updateLinesForModule(moduleId){ const lines = svgLayer.querySelectorAll(`line[data-start-module="${moduleId}"], line[data-end-module="${moduleId}"]`); lines.forEach(line => { const startModuleId = line.dataset.startModule; const startPosition = line.dataset.startPosition; const endModuleId = line.dataset.endModule; const endPosition = line.dataset.endPosition; const startCoords = getConnectorCoords(startModuleId, startPosition); const endCoords = getConnectorCoords(endModuleId, endPosition); line.setAttribute('x1', startCoords.x); line.setAttribute('y1', startCoords.y); line.setAttribute('x2', endCoords.x); line.setAttribute('y2', endCoords.y); }); }
+            function getConnectorCoords(moduleId, position){ const module = document.getElementById(moduleId); if (!module) return { x: 0, y: 0 }; const x = module.offsetLeft; const y = module.offsetTop; const width = module.offsetWidth; const height = module.offsetHeight; switch (position) { case 'top': return { x: x + width / 2, y: y }; case 'right': return { x: x + width, y: y + height / 2 }; case 'bottom': return { x: x + width / 2, y: y + height }; case 'left': return { x: x, y: y + height / 2 }; default: return { x: 0, y: 0 }; } }
+            document.addEventListener('mousemove', (e) => { if (activeModule) { const workspaceRect = workspace.getBoundingClientRect(); let newX = e.clientX - workspaceRect.left - offsetX; let newY = e.clientY - workspaceRect.top - offsetY; newX = Math.max(0, Math.min(newX, workspace.clientWidth - activeModule.offsetWidth)); newY = Math.max(0, Math.min(newY, workspace.clientHeight - activeModule.offsetHeight)); activeModule.style.left = `${newX}px`; activeModule.style.top = `${newY}px`; updateLinesForModule(activeModule.id); } if (isDrawingLine && tempLine) { const workspaceRect = workspace.getBoundingClientRect(); const x2 = e.clientX - workspaceRect.left; const y2 = e.clientY - workspaceRect.top; tempLine.setAttribute('x2', x2); tempLine.setAttribute('y2', y2); } });
+            document.addEventListener('mouseup', (e) => { if (activeModule) { activeModule = null; } if (isDrawingLine) { endDrawingLine(e); } });
+            workspace.addEventListener('contextmenu', (e) => { e.preventDefault(); });
+            function showContextMenu(x, y) { contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`; contextMenu.style.display = 'block'; }
+            document.addEventListener('click', (e) => { if (!contextMenu.contains(e.target)) { hideContextMenu(); }});
+            const resizeObserver = new ResizeObserver(entries => { for (let entry of entries) { if (entry.target.id) { updateLinesForModule(entry.target.id); } } });
+            const mutationObserver = new MutationObserver(mutations => { mutations.forEach(mutation => { mutation.addedNodes.forEach(node => { if (node.nodeType === 1 && node.classList.contains('workspace-module')) { resizeObserver.observe(node); } }); }); });
+            mutationObserver.observe(workspace, { childList: true });
+        });
+    </script>
+</body>
+</html>
