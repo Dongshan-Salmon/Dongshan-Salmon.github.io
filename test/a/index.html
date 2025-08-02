@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿瓦隆線上版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: manipulation; /* 禁用雙擊縮放 */
+        }
+        .card {
+            transition: all 0.3s ease;
+            transform-style: preserve-3d;
+        }
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .card-face-back {
+            transform: rotateY(180deg);
+        }
+        .player-avatar {
+            border: 4px solid transparent;
+        }
+        .player-avatar.selected {
+            border-color: #f59e0b; /* amber-500 */
+            box-shadow: 0 0 15px #f59e0b;
+        }
+        .player-avatar.leader {
+            border-color: #3b82f6; /* blue-500 */
+            box-shadow: 0 0 15px #3b82f6;
+        }
+        .vote-token {
+            transition: all 0.3s ease;
+        }
+        .quest-marker.success {
+            background-color: #2563eb; /* blue-600 */
+            box-shadow: 0 0 10px #2563eb;
+        }
+        .quest-marker.fail {
+            background-color: #dc2626; /* red-600 */
+            box-shadow: 0 0 10px #dc2626;
+        }
+        .modal-backdrop {
+            background-color: rgba(0,0,0,0.75);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-7xl mx-auto">
+
+        <!-- 遊戲大廳 -->
+        <div id="lobby-screen" class="text-center">
+            <h1 class="text-5xl font-bold text-yellow-300 mb-4">阿瓦隆</h1>
+            <p class="text-gray-400 mb-8">抵抗組織的未來，掌握在你手中。</p>
+            <div class="bg-gray-800 p-8 rounded-lg max-w-md mx-auto shadow-2xl">
+                <div id="game-id-display" class="mb-6 hidden">
+                    <p class="text-gray-400">遊戲房號 (分享給朋友):</p>
+                    <div class="flex items-center justify-center mt-2">
+                        <input id="game-id-input" type="text" readonly class="bg-gray-700 text-yellow-300 p-2 rounded-l-md text-center w-full">
+                        <button id="copy-game-id-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r-md">複製</button>
+                    </div>
+                </div>
+
+                <div id="join-game-section">
+                    <input id="player-name-input" type="text" placeholder="輸入你的名字" class="w-full p-3 bg-gray-700 rounded-md mb-4 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input id="join-game-id-input" type="text" placeholder="輸入房號加入遊戲 (可留空)" class="w-full p-3 bg-gray-700 rounded-md mb-4 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="create-game-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md text-lg transition-transform transform hover:scale-105">創建新遊戲</button>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-300">已加入的玩家:</h3>
+                    <ul id="lobby-player-list" class="text-left space-y-2">
+                        <!-- 玩家列表會動態生成於此 -->
+                    </ul>
+                </div>
+
+                <button id="start-game-btn" class="w-full mt-8 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-md text-lg transition-transform transform hover:scale-105 hidden">開始遊戲</button>
+                <p id="start-game-condition" class="text-red-400 mt-4 hidden">需要 5-10 位玩家才能開始遊戲</p>
+            </div>
+        </div>
+
+        <!-- 遊戲主畫面 -->
+        <div id="game-screen" class="hidden">
+            <!-- 上方資訊欄 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <!-- 任務軌跡 -->
+                <div class="bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col justify-center items-center">
+                    <h2 class="text-lg font-bold mb-3 text-gray-300">任務進度</h2>
+                    <div id="quest-track" class="flex space-x-2 sm:space-x-4">
+                        <!-- 任務標記會動態生成於此 -->
+                    </div>
+                </div>
+                <!-- 投票軌跡 -->
+                <div class="bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col justify-center items-center">
+                    <h2 class="text-lg font-bold mb-3 text-gray-300">投票否決次數</h2>
+                    <div id="reject-track" class="flex space-x-2">
+                        <!-- 否決標記會動態生成於此 -->
+                    </div>
+                </div>
+                <!-- 遊戲資訊 -->
+                <div class="bg-gray-800 p-4 rounded-lg shadow-lg text-center">
+                    <h2 class="text-lg font-bold mb-2 text-gray-300">當前回合</h2>
+                    <p class="text-2xl font-bold text-blue-400">任務 <span id="current-quest-number">1</span></p>
+                    <p class="text-sm text-gray-400">領袖: <span id="current-leader-name" class="font-semibold text-white"></span></p>
+                </div>
+            </div>
+
+            <!-- 玩家列表 -->
+            <div id="player-list" class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-10 gap-2 md:gap-4 mb-4 justify-center">
+                <!-- 玩家頭像會動態生成於此 -->
+            </div>
+
+            <!-- 遊戲主面板 -->
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg min-h-[250px] flex flex-col items-center justify-center text-center">
+                <h2 id="game-status-text" class="text-2xl md:text-3xl font-bold text-yellow-300 mb-4">等待領袖選擇隊伍...</h2>
+                <div id="action-area" class="w-full">
+                    <!-- 動作按鈕會動態生成於此 -->
+                </div>
+            </div>
+
+            <!-- 玩家手牌/角色資訊 -->
+            <div class="fixed bottom-4 right-4">
+                <div id="role-card" class="card w-40 h-56 relative cursor-pointer">
+                    <div class="card-face card-face-front bg-blue-800 rounded-lg shadow-lg flex flex-col items-center justify-center p-4 border-2 border-blue-400">
+                        <h3 class="text-lg font-bold">你的角色</h3>
+                        <p class="text-sm">(點擊查看)</p>
+                    </div>
+                    <div id="role-card-back" class="card-face card-face-back bg-gray-700 rounded-lg shadow-lg flex flex-col items-center justify-center p-2 border-2">
+                        <!-- 角色資訊會動態生成於此 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 全螢幕 Modal -->
+        <div id="modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+            <div id="modal-content" class="bg-gray-800 text-white rounded-lg shadow-2xl p-8 max-w-lg w-full text-center transform transition-all scale-95 opacity-0">
+                <h2 id="modal-title" class="text-3xl font-bold mb-4 text-yellow-400"></h2>
+                <div id="modal-body" class="text-lg text-gray-300 space-y-4"></div>
+                <button id="modal-close-btn" class="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md">了解</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- DOM Elements ---
+        const lobbyScreen = document.getElementById('lobby-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const app = document.getElementById('app');
+
+        // Lobby elements
+        const createGameBtn = document.getElementById('create-game-btn');
+        const playerNameInput = document.getElementById('player-name-input');
+        const joinGameIdInput = document.getElementById('join-game-id-input');
+        const gameIdDisplay = document.getElementById('game-id-display');
+        const gameIdInput = document.getElementById('game-id-input');
+        const copyGameIdBtn = document.getElementById('copy-game-id-btn');
+        const lobbyPlayerList = document.getElementById('lobby-player-list');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const startGameCondition = document.getElementById('start-game-condition');
+
+        // Game elements
+        const questTrack = document.getElementById('quest-track');
+        const rejectTrack = document.getElementById('reject-track');
+        const currentQuestNumber = document.getElementById('current-quest-number');
+        const currentLeaderName = document.getElementById('current-leader-name');
+        const playerList = document.getElementById('player-list');
+        const gameStatusText = document.getElementById('game-status-text');
+        const actionArea = document.getElementById('action-area');
+        const roleCard = document.getElementById('role-card');
+        const roleCardBack = document.getElementById('role-card-back');
+
+        // Modal elements
+        const modal = document.getElementById('modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // --- Firebase Setup ---
+        let db, auth;
+        let gameUnsubscribe = null;
+        let localGameState = {};
+        let currentPlayer = {};
+
+        // Use pre-configured variables if available, otherwise use placeholders
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-avalon-app';
+
+        try {
+            const firebaseApp = initializeApp(firebaseConfig);
+            db = getFirestore(firebaseApp);
+            auth = getAuth(firebaseApp);
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+            app.innerHTML = `<div class="text-red-500 text-center">Firebase 初始化失敗。請檢查設定。</div>`;
+        }
+
+        // --- Authentication ---
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                console.log("Authenticated user:", user.uid);
+                currentPlayer.id = user.uid;
+                // Check if user is already in a game from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const gameIdFromUrl = urlParams.get('game');
+                if (gameIdFromUrl) {
+                    joinGame(gameIdFromUrl);
+                }
+            } else {
+                console.log("No user signed in. Signing in anonymously.");
+                const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (initialToken) {
+                    signInWithCustomToken(auth, initialToken).catch(err => {
+                        console.error("Custom token sign-in failed, falling back to anonymous:", err);
+                        signInAnonymously(auth);
+                    });
+                } else {
+                    signInAnonymously(auth);
+                }
+            }
+        });
+
+        // --- Game Logic Constants ---
+        const QUEST_PLAYER_COUNTS = {
+            5: [2, 3, 2, 3, 3],
+            6: [2, 3, 4, 3, 4],
+            7: [2, 3, 3, 4, 4],
+            8: [3, 4, 4, 5, 5],
+            9: [3, 4, 4, 5, 5],
+            10: [3, 4, 4, 5, 5],
+        };
+
+        const ROLE_CONFIG = {
+            5: { good: 3, evil: 2, roles: ['Merlin', 'Percival', 'LoyalServant1', 'Morgana', 'Assassin'] },
+            6: { good: 4, evil: 2, roles: ['Merlin', 'Percival', 'LoyalServant1', 'LoyalServant2', 'Morgana', 'Assassin'] },
+            7: { good: 4, evil: 3, roles: ['Merlin', 'Percival', 'LoyalServant1', 'LoyalServant2', 'Morgana', 'Assassin', 'Oberon'] },
+            8: { good: 5, evil: 3, roles: ['Merlin', 'Percival', 'LoyalServant1', 'LoyalServant2', 'LoyalServant3', 'Morgana', 'Assassin', 'Minion1'] },
+            9: { good: 6, evil: 3, roles: ['Merlin', 'Percival', 'LoyalServant1', 'LoyalServant2', 'LoyalServant3', 'LoyalServant4', 'Morgana', 'Assassin', 'Mordred'] },
+            10: { good: 6, evil: 4, roles: ['Merlin', 'Percival', 'LoyalServant1', 'LoyalServant2', 'LoyalServant3', 'LoyalServant4', 'Morgana', 'Assassin', 'Mordred', 'Minion1'] },
+        };
+
+        const ROLES = {
+            Merlin: { name: '梅林', alignment: 'good', description: '你知道所有邪惡方（除了莫德雷德）。' },
+            Percival: { name: '派西維爾', alignment: 'good', description: '你知道梅林和莫甘娜（但不知道誰是誰）。' },
+            LoyalServant1: { name: '亞瑟的忠臣', alignment: 'good', description: '你是正義方，但沒有特殊能力。' },
+            LoyalServant2: { name: '亞瑟的忠臣', alignment: 'good', description: '你是正義方，但沒有特殊能力。' },
+            LoyalServant3: { name: '亞瑟的忠臣', alignment: 'good', description: '你是正義方，但沒有特殊能力。' },
+            LoyalServant4: { name: '亞瑟的忠臣', alignment: 'good', description: '你是正義方，但沒有特殊能力。' },
+            Morgana: { name: '莫甘娜', alignment: 'evil', description: '你假扮成梅林，派西維爾會看到你。' },
+            Assassin: { name: '刺客', alignment: 'evil', description: '如果正義方贏得三個任務，你可以刺殺梅林來反敗為勝。' },
+            Mordred: { name: '莫德雷德', alignment: 'evil', description: '梅林不知道你是誰。' },
+            Oberon: { name: '奧伯倫', alignment: 'evil', description: '你不知道其他邪惡方是誰，他們也不知道你。' },
+            Minion1: { name: '莫德雷德的爪牙', alignment: 'evil', description: '你是邪惡方。' },
+        };
+
+        // --- Event Listeners ---
+        createGameBtn.addEventListener('click', () => {
+            const gameId = joinGameIdInput.value.trim();
+            if (gameId) {
+                joinGame(gameId);
+            } else {
+                createNewGame();
+            }
+        });
+
+        copyGameIdBtn.addEventListener('click', () => {
+            gameIdInput.select();
+            document.execCommand('copy');
+            copyGameIdBtn.textContent = '已複製!';
+            setTimeout(() => { copyGameIdBtn.textContent = '複製'; }, 2000);
+        });
+
+        startGameBtn.addEventListener('click', async () => {
+            if (localGameState.status !== 'lobby') return;
+            const playerCount = localGameState.players.length;
+            if (playerCount >= 5 && playerCount <= 10) {
+                await initializeGame(localGameState.id);
+            }
+        });
+
+        roleCard.addEventListener('click', () => {
+            roleCard.classList.toggle('is-flipped');
+        });
+
+        modalCloseBtn.addEventListener('click', hideModal);
+
+        // --- Core Functions ---
+        async function createNewGame() {
+            const playerName = playerNameInput.value.trim();
+            if (!playerName) {
+                alert("請輸入你的名字！");
+                return;
+            }
+            currentPlayer.name = playerName;
+
+            try {
+                const gameRef = await addDoc(collection(db, "artifacts", appId, "public", "data", "avalonGames"), {
+                    status: 'lobby',
+                    players: [{ ...currentPlayer, isHost: true }],
+                    createdAt: new Date(),
+                });
+                
+                joinGame(gameRef.id);
+            } catch (error) {
+                console.error("Error creating game:", error);
+                alert("創建遊戲失敗，請稍後再試。");
+            }
+        }
+
+        async function joinGame(gameId) {
+            const playerName = playerNameInput.value.trim();
+            if (!playerName) {
+                // If rejoining via URL, name might be empty. It will be retrieved from game state.
+                const playerInGame = localGameState?.players?.find(p => p.id === currentPlayer.id);
+                if (!playerInGame) {
+                     alert("請輸入你的名字！");
+                     return;
+                }
+            } else {
+                currentPlayer.name = playerName;
+            }
+            
+            const gameRef = doc(db, "artifacts", appId, "public", "data", "avalonGames", gameId);
+            const gameDoc = await getDoc(gameRef);
+
+            if (!gameDoc.exists()) {
+                alert("找不到該遊戲房號！");
+                return;
+            }
+
+            const gameData = gameDoc.data();
+            if (gameData.status !== 'lobby') {
+                // Allow rejoining an ongoing game
+                const playerInGame = gameData.players.find(p => p.id === currentPlayer.id);
+                if (!playerInGame) {
+                    alert("遊戲已經開始，無法加入！");
+                    return;
+                }
+            } else {
+                 // Add new player to lobby
+                const playerExists = gameData.players.some(p => p.id === currentPlayer.id);
+                if (!playerExists) {
+                    if (gameData.players.length >= 10) {
+                        alert("遊戲房已滿！");
+                        return;
+                    }
+                    await updateDoc(gameRef, {
+                        players: [...gameData.players, currentPlayer]
+                    });
+                }
+            }
+
+            if (gameUnsubscribe) gameUnsubscribe();
+            gameUnsubscribe = onSnapshot(gameRef, (doc) => {
+                localGameState = { id: doc.id, ...doc.data() };
+                updateUI();
+            });
+
+            // Update URL to reflect game ID
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('game', gameId);
+                window.history.pushState({}, '', url.toString());
+            } catch (error) {
+                console.warn("Could not update URL with history.pushState. This is expected in sandboxed environments.", error);
+            }
+        }
+
+        async function initializeGame(gameId) {
+            const gameRef = doc(db, "artifacts", appId, "public", "data", "avalonGames", gameId);
+            const playerCount = localGameState.players.length;
+            const config = ROLE_CONFIG[playerCount];
+            
+            // Shuffle roles and players
+            let rolesToAssign = [...config.roles];
+            rolesToAssign.sort(() => Math.random() - 0.5);
+            let players = [...localGameState.players];
+            players.sort(() => Math.random() - 0.5);
+
+            const assignedPlayers = players.map((player, index) => {
+                const roleKey = rolesToAssign[index];
+                return {
+                    ...player,
+                    role: roleKey,
+                    alignment: ROLES[roleKey].alignment,
+                    teamVote: null, // 'approve' or 'reject'
+                    missionVote: null, // 'success' or 'fail'
+                };
+            });
+
+            await updateDoc(gameRef, {
+                status: 'team_building',
+                players: assignedPlayers,
+                questNumber: 1,
+                rejectTrack: 0,
+                leaderIndex: 0,
+                quests: [
+                    { status: 'pending', result: null, team: [] },
+                    { status: 'pending', result: null, team: [] },
+                    { status: 'pending', result: null, team: [] },
+                    { status: 'pending', result: null, team: [] },
+                    { status: 'pending', result: null, team: [] },
+                ],
+                proposedTeam: [],
+                gameLog: [`遊戲開始，共有 ${playerCount} 位玩家。`]
+            });
+        }
+
+        // --- UI Update Function ---
+        function updateUI() {
+            if (!localGameState || !localGameState.status) {
+                showLobby();
+                return;
+            }
+
+            if (localGameState.status === 'lobby') {
+                showLobby();
+                updateLobbyUI();
+            } else {
+                showGame();
+                updateGameUI();
+            }
+        }
+        
+        function showLobby() {
+            lobbyScreen.classList.remove('hidden');
+            gameScreen.classList.add('hidden');
+        }
+
+        function showGame() {
+            lobbyScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+        }
+
+        function updateLobbyUI() {
+            gameIdDisplay.classList.remove('hidden');
+            gameIdInput.value = localGameState.id;
+            document.getElementById('join-game-section').classList.add('hidden');
+
+            lobbyPlayerList.innerHTML = localGameState.players.map(p => 
+                `<li class="bg-gray-700 p-2 rounded-md flex items-center">
+                    <span class="text-blue-400 font-bold">${p.isHost ? '👑' : '👤'}</span>
+                    <span class="ml-3">${p.name}</span>
+                </li>`
+            ).join('');
+
+            const playerIsHost = localGameState.players.find(p => p.id === currentPlayer.id)?.isHost;
+            const playerCount = localGameState.players.length;
+
+            if (playerIsHost) {
+                startGameBtn.classList.remove('hidden');
+                if (playerCount >= 5 && playerCount <= 10) {
+                    startGameBtn.disabled = false;
+                    startGameBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    startGameCondition.classList.add('hidden');
+                } else {
+                    startGameBtn.disabled = true;
+                    startGameBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    startGameCondition.classList.remove('hidden');
+                }
+            }
+        }
+
+        function updateGameUI() {
+            const me = localGameState.players.find(p => p.id === currentPlayer.id);
+            if (!me) return; // Not in game yet
+
+            // Update Quest Track
+            const playerCount = localGameState.players.length;
+            questTrack.innerHTML = localGameState.quests.map((q, index) => {
+                const requiredPlayers = QUEST_PLAYER_COUNTS[playerCount][index];
+                let questClass = 'bg-gray-600';
+                if (q.status === 'success') questClass = 'quest-marker success';
+                if (q.status === 'fail') questClass = 'quest-marker fail';
+                if (index + 1 === localGameState.questNumber) questClass += ' ring-2 ring-yellow-400';
+
+                return `<div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-xl font-bold ${questClass}">${requiredPlayers}</div>`;
+            }).join('');
+
+            // Update Reject Track
+            rejectTrack.innerHTML = [...Array(5)].map((_, index) => 
+                `<div class="w-8 h-8 rounded-full flex items-center justify-center ${index < localGameState.rejectTrack ? 'bg-red-600' : 'bg-gray-600'}">${index + 1}</div>`
+            ).join('');
+
+            // Update Header Info
+            const leader = localGameState.players[localGameState.leaderIndex];
+            currentQuestNumber.textContent = localGameState.questNumber;
+            currentLeaderName.textContent = leader.name;
+
+            // Update Player List
+            playerList.innerHTML = localGameState.players.map(p => {
+                const isLeader = p.id === leader.id;
+                const isSelected = localGameState.proposedTeam?.includes(p.id);
+                let voteIndicator = '';
+                if (localGameState.status === 'team_vote_reveal' || localGameState.status === 'mission_vote_reveal') {
+                    if (p.teamVote) {
+                        voteIndicator = p.teamVote === 'approve' ? 'bg-blue-500' : 'bg-red-500';
+                    }
+                }
+
+                return `
+                    <div class="text-center">
+                        <div class="player-avatar w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-1 flex items-center justify-center bg-gray-700 text-3xl
+                            ${isLeader ? 'leader' : ''}
+                            ${isSelected ? 'selected' : ''}"
+                            data-player-id="${p.id}">
+                            <span>${p.name.charAt(0)}</span>
+                            ${voteIndicator ? `<div class="absolute w-5 h-5 rounded-full ${voteIndicator} bottom-0 right-0 border-2 border-gray-800"></div>` : ''}
+                        </div>
+                        <p class="text-sm truncate">${p.name}</p>
+                    </div>`;
+            }).join('');
+
+            // Update Role Card
+            updateRoleCard(me);
+
+            // Update Main Action Area based on game state
+            renderActionArea(me, leader);
+
+            // Check for game over
+            if (localGameState.status === 'game_over') {
+                showGameOverModal();
+            }
+        }
+
+        function updateRoleCard(me) {
+            const roleInfo = ROLES[me.role];
+            let specialInfo = '';
+
+            // Generate special information based on role
+            if (me.role === 'Merlin') {
+                const evilPlayers = localGameState.players
+                    .filter(p => p.alignment === 'evil' && p.role !== 'Mordred')
+                    .map(p => p.name);
+                specialInfo = `邪惡方: ${evilPlayers.join(', ')}`;
+            } else if (me.role === 'Percival') {
+                const targets = localGameState.players
+                    .filter(p => p.role === 'Merlin' || p.role === 'Morgana')
+                    .map(p => p.name);
+                targets.sort(() => Math.random() - 0.5); // Shuffle to hide who is who
+                specialInfo = `梅林/莫甘娜: ${targets.join(', ')}`;
+            } else if (me.alignment === 'evil' && me.role !== 'Oberon') {
+                const evilPlayers = localGameState.players
+                    .filter(p => p.alignment === 'evil' && p.role !== 'Oberon')
+                    .map(p => p.name);
+                specialInfo = `邪惡同夥: ${evilPlayers.join(', ')}`;
+            }
+
+            roleCardBack.innerHTML = `
+                <h3 class="text-xl font-bold ${me.alignment === 'good' ? 'text-blue-400' : 'text-red-400'}">${roleInfo.name}</h3>
+                <p class="text-sm text-center mt-2">${roleInfo.description}</p>
+                ${specialInfo ? `<div class="mt-2 text-xs text-yellow-300 bg-gray-800 p-1 rounded">${specialInfo}</div>` : ''}
+            `;
+        }
+
+        function renderActionArea(me, leader) {
+            const status = localGameState.status;
+            gameStatusText.textContent = getStatusMessage(status, leader.name);
+            actionArea.innerHTML = '';
+
+            switch (status) {
+                case 'team_building':
+                    if (me.id === leader.id) {
+                        renderTeamSelectionControls();
+                    }
+                    break;
+                case 'team_vote':
+                    renderTeamVoteButtons();
+                    break;
+                case 'team_vote_reveal':
+                    // Displayed via player avatars and status text
+                    break;
+                case 'mission_vote':
+                    if (localGameState.proposedTeam.includes(me.id)) {
+                        renderMissionVoteButtons(me.alignment);
+                    }
+                    break;
+                case 'mission_vote_reveal':
+                     // Displayed via status text
+                    break;
+                case 'assassination':
+                    if (me.role === 'Assassin') {
+                        renderAssassinationControls();
+                    }
+                    break;
+            }
+            
+            // Add click listeners for selectable players
+            document.querySelectorAll('.player-avatar').forEach(avatar => {
+                avatar.addEventListener('click', handlePlayerSelection);
+            });
+        }
+        
+        function getStatusMessage(status, leaderName) {
+            const questNum = localGameState.questNumber;
+            const requiredPlayers = QUEST_PLAYER_COUNTS[localGameState.players.length][questNum - 1];
+
+            switch (status) {
+                case 'team_building': return `${leaderName} 正在選擇 ${requiredPlayers} 位玩家出任務...`;
+                case 'team_vote': return `請為 ${leaderName} 的隊伍投票`;
+                case 'team_vote_reveal': return `投票結果: ${localGameState.voteResult.approves} 贊成, ${localGameState.voteResult.rejects} 反對. 隊伍${localGameState.voteResult.passed ? '成立' : '解散'}!`;
+                case 'mission_vote': return `出任務中... 等待隊員回報結果。`;
+                case 'mission_vote_reveal': return `任務 ${questNum} ${localGameState.quests[questNum-1].result}! (失敗票: ${localGameState.failVotes})` ;
+                case 'assassination': return '刺客正在選擇刺殺對象...';
+                case 'game_over': return `遊戲結束! ${localGameState.winner === 'good' ? '正義方' : '邪惡方'}獲勝!`;
+                default: return '處理中...';
+            }
+        }
+
+        function handlePlayerSelection(event) {
+            const me = localGameState.players.find(p => p.id === currentPlayer.id);
+            const leader = localGameState.players[localGameState.leaderIndex];
+            if (me.id !== leader.id) return; // Only leader can select
+
+            const status = localGameState.status;
+            if (status !== 'team_building' && status !== 'assassination') return;
+
+            const playerId = event.currentTarget.dataset.playerId;
+            const isSelected = event.currentTarget.classList.contains('selected');
+            const requiredPlayers = status === 'assassination' ? 1 : QUEST_PLAYER_COUNTS[localGameState.players.length][localGameState.questNumber - 1];
+            
+            let currentSelection = Array.from(document.querySelectorAll('.player-avatar.selected')).map(el => el.dataset.playerId);
+
+            if (isSelected) {
+                currentSelection = currentSelection.filter(id => id !== playerId);
+            } else {
+                if (currentSelection.length < requiredPlayers) {
+                    currentSelection.push(playerId);
+                }
+            }
+            
+            // Update UI immediately for responsiveness
+            document.querySelectorAll('.player-avatar').forEach(avatar => {
+                if (currentSelection.includes(avatar.dataset.playerId)) {
+                    avatar.classList.add('selected');
+                } else {
+                    avatar.classList.remove('selected');
+                }
+            });
+            
+            // Update button state
+            const confirmBtn = document.getElementById('confirm-team-btn') || document.getElementById('confirm-assassination-btn');
+            if (confirmBtn) {
+                if (currentSelection.length === requiredPlayers) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    confirmBtn.disabled = true;
+                    confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        function renderTeamSelectionControls() {
+            const requiredPlayers = QUEST_PLAYER_COUNTS[localGameState.players.length][localGameState.questNumber - 1];
+            actionArea.innerHTML = `
+                <p class="mb-4 text-gray-400">請選擇 ${requiredPlayers} 位玩家。</p>
+                <button id="confirm-team-btn" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-md text-lg opacity-50 cursor-not-allowed">確認隊伍</button>
+            `;
+            document.getElementById('confirm-team-btn').addEventListener('click', async () => {
+                const selectedIds = Array.from(document.querySelectorAll('.player-avatar.selected')).map(el => el.dataset.playerId);
+                await updateDoc(doc(db, "artifacts", appId, "public", "data", "avalonGames", localGameState.id), {
+                    proposedTeam: selectedIds,
+                    status: 'team_vote'
+                });
+            });
+        }
+
+        function renderTeamVoteButtons() {
+            actionArea.innerHTML = `
+                <div class="flex space-x-4 justify-center">
+                    <button id="approve-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-lg text-xl">贊成</button>
+                    <button id="reject-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-10 rounded-lg text-xl">反對</button>
+                </div>
+            `;
+            document.getElementById('approve-btn').addEventListener('click', () => submitVote('teamVote', 'approve'));
+            document.getElementById('reject-btn').addEventListener('click', () => submitVote('teamVote', 'reject'));
+        }
+        
+        function renderMissionVoteButtons(alignment) {
+            actionArea.innerHTML = `
+                <div class="flex space-x-4 justify-center">
+                    <button id="success-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-lg text-xl">成功</button>
+                    ${alignment === 'evil' ? `<button id="fail-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-10 rounded-lg text-xl">失敗</button>` : ''}
+                </div>
+            `;
+            document.getElementById('success-btn').addEventListener('click', () => submitVote('missionVote', 'success'));
+            if (alignment === 'evil') {
+                document.getElementById('fail-btn').addEventListener('click', () => submitVote('missionVote', 'fail'));
+            }
+        }
+        
+        function renderAssassinationControls() {
+             actionArea.innerHTML = `
+                <p class="mb-4 text-gray-400">選擇你要刺殺的對象。你相信誰是梅林？</p>
+                <button id="confirm-assassination-btn" disabled class="bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-8 rounded-md text-lg opacity-50 cursor-not-allowed">確認刺殺</button>
+            `;
+            document.getElementById('confirm-assassination-btn').addEventListener('click', async () => {
+                const targetId = document.querySelector('.player-avatar.selected').dataset.playerId;
+                const target = localGameState.players.find(p => p.id === targetId);
+                let winner;
+                if (target.role === 'Merlin') {
+                    winner = 'evil';
+                } else {
+                    winner = 'good';
+                }
+                await updateDoc(doc(db, "artifacts", appId, "public", "data", "avalonGames", localGameState.id), {
+                    status: 'game_over',
+                    winner: winner,
+                    assassination: { assassin: currentPlayer.id, target: targetId, targetRole: target.role }
+                });
+            });
+        }
+
+        async function submitVote(voteType, voteValue) {
+            const players = localGameState.players.map(p => {
+                if (p.id === currentPlayer.id) {
+                    return { ...p, [voteType]: voteValue };
+                }
+                return p;
+            });
+            await updateDoc(doc(db, "artifacts", appId, "public", "data", "avalonGames", localGameState.id), { players });
+            actionArea.innerHTML = `<p class="text-2xl text-gray-400">已投票。等待其他玩家...</p>`;
+
+            // Check if all votes are in (server-side function would be better, but this is a client-side approximation)
+            // This logic will be handled by a "host" client or cloud function in a real app,
+            // here we assume one client will trigger the next state.
+            checkAllVotes(voteType, players);
+        }
+        
+        async function checkAllVotes(voteType, players) {
+            let allVoted = false;
+            if (voteType === 'teamVote') {
+                allVoted = players.every(p => p.teamVote !== null);
+            } else if (voteType === 'missionVote') {
+                allVoted = players.filter(p => localGameState.proposedTeam.includes(p.id)).every(p => p.missionVote !== null);
+            }
+
+            if (allVoted) {
+                // To prevent race conditions, only the host should process the votes.
+                const amIHost = localGameState.players.find(p => p.id === currentPlayer.id)?.isHost;
+                if (amIHost) {
+                   setTimeout(() => processVotes(voteType), 1000); // Give a moment for all writes to settle
+                }
+            }
+        }
+
+        async function processVotes(voteType) {
+            const gameRef = doc(db, "artifacts", appId, "public", "data", "avalonGames", localGameState.id);
+            let nextState = {};
+
+            if (voteType === 'teamVote') {
+                const approves = localGameState.players.filter(p => p.teamVote === 'approve').length;
+                const rejects = localGameState.players.length - approves;
+                const passed = approves > rejects;
+                
+                nextState.status = 'team_vote_reveal';
+                nextState.voteResult = { approves, rejects, passed };
+
+            } else if (voteType === 'missionVote') {
+                const missionVotes = localGameState.players
+                    .filter(p => localGameState.proposedTeam.includes(p.id))
+                    .map(p => p.missionVote);
+                
+                const failVotes = missionVotes.filter(v => v === 'fail').length;
+                const playerCount = localGameState.players.length;
+                const questNum = localGameState.questNumber;
+
+                // On quest 4 in games of 7+ players, two fails are required.
+                const failsRequired = (playerCount >= 7 && questNum === 4) ? 2 : 1;
+                const missionSuccess = failVotes < failsRequired;
+                
+                const questIndex = questNum - 1;
+                let newQuests = [...localGameState.quests];
+                newQuests[questIndex] = {
+                    status: missionSuccess ? 'success' : 'fail',
+                    result: missionSuccess ? '成功' : '失敗',
+                    team: localGameState.proposedTeam,
+                    failVotes: failVotes,
+                };
+
+                nextState.status = 'mission_vote_reveal';
+                nextState.quests = newQuests;
+                nextState.failVotes = failVotes;
+            }
+
+            await updateDoc(gameRef, nextState);
+            
+            // Schedule next transition
+            setTimeout(() => {
+                transitionToNextState(voteType);
+            }, 4000); // Show results for 4 seconds
+        }
+        
+        async function transitionToNextState(voteType) {
+            const gameRef = doc(db, "artifacts", appId, "public", "data", "avalonGames", localGameState.id);
+            let nextState = {};
+
+            if (voteType === 'teamVote') {
+                const { passed } = localGameState.voteResult;
+                if (passed) {
+                    nextState.status = 'mission_vote';
+                    nextState.rejectTrack = 0; // Reset reject track on successful vote
+                } else {
+                    nextState.rejectTrack = localGameState.rejectTrack + 1;
+                    if (nextState.rejectTrack >= 5) {
+                        nextState.status = 'game_over';
+                        nextState.winner = 'evil';
+                    } else {
+                        nextState.status = 'team_building';
+                        nextState.leaderIndex = (localGameState.leaderIndex + 1) % localGameState.players.length;
+                    }
+                }
+            } else if (voteType === 'missionVote') {
+                const successfulQuests = localGameState.quests.filter(q => q.status === 'success').length;
+                const failedQuests = localGameState.quests.filter(q => q.status === 'fail').length;
+
+                if (successfulQuests >= 3) {
+                    nextState.status = 'assassination';
+                } else if (failedQuests >= 3) {
+                    nextState.status = 'game_over';
+                    nextState.winner = 'evil';
+                } else {
+                    nextState.status = 'team_building';
+                    nextState.leaderIndex = (localGameState.leaderIndex + 1) % localGameState.players.length;
+                    nextState.questNumber = localGameState.questNumber + 1;
+                }
+            }
+            
+            // Reset votes for next round
+            nextState.players = localGameState.players.map(p => ({ ...p, teamVote: null, missionVote: null }));
+            nextState.proposedTeam = [];
+
+            await updateDoc(gameRef, nextState);
+        }
+        
+        function showGameOverModal() {
+            const winnerText = localGameState.winner === 'good' ? '正義方勝利！' : '邪惡方勝利！';
+            let reason = '';
+            if (localGameState.winner === 'evil' && localGameState.quests.filter(q=>q.status==='fail').length < 3) {
+                 if (localGameState.rejectTrack >= 5) {
+                    reason = '<p>連續 5 次組隊投票失敗。</p>';
+                } else {
+                    reason = `<p>刺客成功刺殺了梅林！</p>`;
+                }
+            } else if (localGameState.winner === 'good' && localGameState.assassination) {
+                reason = '<p>刺客未能找出梅林！</p>';
+            }
+
+            const allRoles = localGameState.players.map(p => {
+                const roleInfo = ROLES[p.role];
+                const alignmentColor = p.alignment === 'good' ? 'text-blue-400' : 'text-red-400';
+                return `<div class="p-2 bg-gray-700 rounded-md text-left"><strong class="${alignmentColor}">${p.name}</strong> 是 ${roleInfo.name}</div>`;
+            }).join('');
+
+            showModal(winnerText, `
+                ${reason}
+                <h3 class="text-xl font-bold mt-6 mb-2 text-yellow-300">角色揭曉</h3>
+                <div class="space-y-2 max-h-60 overflow-y-auto">${allRoles}</div>
+            `);
+            modalCloseBtn.textContent = '重新開始';
+            modalCloseBtn.onclick = () => {
+                // Only host can restart
+                const amIHost = localGameState.players.find(p => p.id === currentPlayer.id)?.isHost;
+                if (amIHost) {
+                    resetGame();
+                } else {
+                    alert("只有房主可以重新開始遊戲。");
+                }
+            };
+        }
+        
+        async function resetGame() {
+            const gameRef = doc(db, "artifacts", appId, "public", "data", "avalonGames", localGameState.id);
+            const players = localGameState.players.map(({id, name, isHost}) => ({id, name, isHost})); // Keep basic info
+            await setDoc(gameRef, {
+                status: 'lobby',
+                players: players,
+                createdAt: new Date(),
+            });
+            hideModal();
+            modalCloseBtn.textContent = '了解';
+            modalCloseBtn.onclick = hideModal;
+        }
+
+        // --- Modal Helpers ---
+        function showModal(title, bodyHtml) {
+            modalTitle.textContent = title;
+            modalBody.innerHTML = bodyHtml;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function hideModal() {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+    </script>
+</body>
+</html>
