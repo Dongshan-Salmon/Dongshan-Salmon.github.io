@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>批次圖片處理（單檔版）</title>
+  <style>
+    :root { --bg:#0b0f17; --card:#111827; --muted:#9ca3af; --text:#e5e7eb; --line:#243042; --btn:#2563eb; --btn2:#10b981; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:linear-gradient(180deg,#070a10, #0b0f17 40%, #070a10);color:var(--text)}
+    .wrap{max-width:1100px;margin:0 auto;padding:14px}
+    h1{font-size:18px;margin:6px 0 10px}
+    .sub{color:var(--muted);font-size:13px;margin-bottom:12px;line-height:1.4}
+    .grid{display:grid;gap:12px}
+    @media(min-width:920px){ .grid{grid-template-columns: 360px 1fr} }
+    .card{background:rgba(17,24,39,.92);border:1px solid rgba(36,48,66,.9);border-radius:16px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    label{display:block;font-size:12px;color:var(--muted);margin:2px 0 6px}
+    input[type="file"], select, input[type="number"], input[type="text"], input[type="range"]{
+      width:100%; padding:10px 10px; border-radius:12px; border:1px solid rgba(36,48,66,.9);
+      background:#0b1220; color:var(--text); outline:none;
+    }
+    input[type="range"]{padding:10px}
+    .btns{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    button{
+      appearance:none;border:0;border-radius:12px;padding:10px 12px;font-weight:700;color:white;cursor:pointer;
+      background:var(--btn); flex:1; min-width:140px;
+    }
+    button.secondary{background:#374151}
+    button.good{background:var(--btn2)}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.45}
+    .list{display:grid;gap:10px}
+    .item{
+      border:1px solid rgba(36,48,66,.85);
+      border-radius:16px; padding:10px; background:rgba(11,18,32,.75);
+    }
+    .itemHead{display:flex; gap:10px; align-items:center}
+    .thumb{width:64px;height:64px;border-radius:14px; border:1px solid rgba(36,48,66,.9); object-fit:cover; background:#060912}
+    .title{font-size:13px;font-weight:700}
+    .meta{font-size:12px;color:var(--muted);margin-top:2px}
+    details{margin-top:10px}
+    summary{cursor:pointer;color:#cbd5e1;font-weight:700}
+    .miniRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .miniRow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
+    .chip{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border:1px solid rgba(36,48,66,.9);border-radius:999px;background:#0b1220;color:#cbd5e1;font-size:12px}
+    .bar{height:8px;background:#0b1220;border:1px solid rgba(36,48,66,.9);border-radius:999px;overflow:hidden}
+    .bar > i{display:block;height:100%;width:0;background:#22c55e}
+    .out{display:grid;gap:10px;margin-top:10px}
+    a.dl{display:inline-block;text-decoration:none;color:white;background:#1f2937;border:1px solid rgba(36,48,66,.9);padding:10px 12px;border-radius:12px;font-weight:700}
+    .warn{color:#fbbf24;font-size:12px;line-height:1.45}
+    .ok{color:#34d399;font-size:12px}
+    .small{font-size:12px;color:var(--muted)}
+    .k{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>批次圖片處理（單一 HTML、手機可用）</h1>
+    <div class="sub">
+      1) 選 N 張圖片 → 2) 設定「全域」處理 → 3) 需要的話展開單張覆寫 → 4) 一鍵輸出 N 張。<br/>
+      ⚠️ 大量高解析圖片可能會吃記憶體；建議一次 10～30 張一批，或先縮小輸出長邊。
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <label>選擇圖片（可多選）</label>
+        <input id="fileInput" type="file" accept="image/*" multiple />
+
+        <div class="k">
+          <span class="chip">✅ 支援：JPG/PNG/WebP/HEIC(視瀏覽器)</span>
+          <span class="chip">📱 行動端友善</span>
+        </div>
+
+        <hr style="border:0;border-top:1px solid rgba(36,48,66,.8);margin:12px 0" />
+
+        <div class="title" style="margin-bottom:6px">全域設定（批次套用）</div>
+
+        <div class="row">
+          <div>
+            <label>輸出格式</label>
+            <select id="outFormat">
+              <option value="image/jpeg">JPG</option>
+              <option value="image/webp">WebP</option>
+              <option value="image/png">PNG（無品質參數）</option>
+            </select>
+          </div>
+          <div>
+            <label>品質 (JPG/WebP)</label>
+            <input id="quality" type="range" min="0.4" max="1" step="0.01" value="0.85" />
+            <div class="small">目前：<span id="qv">0.85</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px" class="row">
+          <div>
+            <label>尺寸模式</label>
+            <select id="sizeMode">
+              <option value="longEdge">指定「長邊」</option>
+              <option value="wh">指定「寬 × 高」</option>
+              <option value="scale">倍率縮放</option>
+              <option value="keep">維持原尺寸</option>
+            </select>
+          </div>
+          <div>
+            <label>長邊(px) / 倍率</label>
+            <input id="sizeValue" type="number" value="1600" min="1" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>寬(px)（尺寸模式=寬高才用）</label>
+            <input id="wValue" type="number" value="1080" min="1" />
+          </div>
+          <div>
+            <label>高(px)（尺寸模式=寬高才用）</label>
+            <input id="hValue" type="number" value="1080" min="1" />
+          </div>
+        </div>
+
+        <div style="margin-top:10px" class="row">
+          <div>
+            <label>比例處理</label>
+            <select id="ratioMode">
+              <option value="keep">維持原比例</option>
+              <option value="stretch">強制拉伸到目標尺寸</option>
+              <option value="crop">裁切成指定比例</option>
+              <option value="pad">補邊成指定比例</option>
+            </select>
+          </div>
+          <div>
+            <label>目標比例</label>
+            <select id="ratioPreset">
+              <option value="free">自由（用下方自訂）</option>
+              <option value="1:1">1:1</option>
+              <option value="4:3">4:3</option>
+              <option value="3:4">3:4</option>
+              <option value="16:9">16:9</option>
+              <option value="9:16">9:16</option>
+              <option value="2:3">2:3</option>
+              <option value="3:2">3:2</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>自訂比例寬</label>
+            <input id="ratioW" type="number" value="1" min="1" />
+          </div>
+          <div>
+            <label>自訂比例高</label>
+            <input id="ratioH" type="number" value="1" min="1" />
+          </div>
+        </div>
+
+        <details style="margin-top:10px">
+          <summary>全域「細部修改」(濾鏡/旋轉/銳化)</summary>
+
+          <div class="miniRow">
+            <div>
+              <label>旋轉</label>
+              <select id="rot">
+                <option value="0">0°</option>
+                <option value="90">90°</option>
+                <option value="180">180°</option>
+                <option value="270">270°</option>
+              </select>
+            </div>
+            <div>
+              <label>鏡像</label>
+              <select id="flip">
+                <option value="none">不鏡像</option>
+                <option value="h">水平</option>
+                <option value="v">垂直</option>
+                <option value="hv">水平+垂直</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="miniRow" style="margin-top:10px">
+            <div>
+              <label>亮度</label>
+              <input id="brightness" type="range" min="0.5" max="1.5" step="0.01" value="1" />
+            </div>
+            <div>
+              <label>對比</label>
+              <input id="contrast" type="range" min="0.5" max="1.5" step="0.01" value="1" />
+            </div>
+          </div>
+
+          <div class="miniRow" style="margin-top:10px">
+            <div>
+              <label>飽和</label>
+              <input id="saturate" type="range" min="0" max="2" step="0.01" value="1" />
+            </div>
+            <div>
+              <label>灰階</label>
+              <input id="grayscale" type="range" min="0" max="1" step="0.01" value="0" />
+            </div>
+          </div>
+
+          <div class="miniRow3" style="margin-top:10px">
+            <div>
+              <label>銳化（0~1）</label>
+              <input id="sharpen" type="range" min="0" max="1" step="0.05" value="0" />
+            </div>
+            <div>
+              <label>模糊（0~6px）</label>
+              <input id="blur" type="range" min="0" max="6" step="0.1" value="0" />
+            </div>
+            <div>
+              <label>輸出檔名前綴</label>
+              <input id="namePrefix" type="text" value="processed_" />
+            </div>
+          </div>
+
+          <div class="hint">
+            濾鏡使用瀏覽器 Canvas。部分舊手機瀏覽器可能不支援某些 filter，但通常可用。
+          </div>
+        </details>
+
+        <div class="btns">
+          <button id="processBtn" class="good" disabled>開始處理 & 產生下載</button>
+          <button id="clearBtn" class="secondary">清空</button>
+        </div>
+
+        <div style="margin-top:10px">
+          <div class="bar"><i id="prog"></i></div>
+          <div class="small" style="margin-top:6px">
+            狀態：<span id="status">尚未選擇圖片</span>
+          </div>
+          <div id="zipHint" class="warn" style="margin-top:8px;display:none"></div>
+        </div>
+
+        <div class="hint">
+          「裁切成指定比例」= 會把多出來的部分裁掉（常用於 IG/證件/版面統一）。<br/>
+          「補邊成指定比例」= 不裁內容，用黑邊補滿（適合不想裁掉畫面）。
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">圖片清單（每張可覆寫設定）</div>
+        <div class="sub" style="margin-top:4px">點開每張的「單張覆寫」即可針對單一照片做不同設定。</div>
+        <div id="imgList" class="list"></div>
+
+        <div id="outWrap" class="out" style="display:none">
+          <div class="title">輸出結果</div>
+          <div id="outLinks" class="list"></div>
+          <div class="btns">
+            <button id="zipBtn" disabled>打包 ZIP 下載</button>
+            <button id="dlAllBtn" class="secondary" disabled>逐張觸發下載</button>
+          </div>
+          <div class="hint">
+            iOS Safari 有時會阻擋「連續自動下載」，可改用 ZIP 或手動點每張連結下載。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JSZip (for ZIP download). If offline, tool still works without ZIP. -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    const fileInput = el('fileInput');
+    const imgList = el('imgList');
+    const processBtn = el('processBtn');
+    const clearBtn = el('clearBtn');
+    const statusEl = el('status');
+    const progEl = el('prog');
+    const outWrap = el('outWrap');
+    const outLinks = el('outLinks');
+    const zipBtn = el('zipBtn');
+    const dlAllBtn = el('dlAllBtn');
+    const zipHint = el('zipHint');
+
+    const outFormat = el('outFormat');
+    const quality = el('quality');
+    const qv = el('qv');
+
+    const sizeMode = el('sizeMode');
+    const sizeValue = el('sizeValue');
+    const wValue = el('wValue');
+    const hValue = el('hValue');
+
+    const ratioMode = el('ratioMode');
+    const ratioPreset = el('ratioPreset');
+    const ratioW = el('ratioW');
+    const ratioH = el('ratioH');
+
+    const rot = el('rot');
+    const flip = el('flip');
+    const brightness = el('brightness');
+    const contrast = el('contrast');
+    const saturate = el('saturate');
+    const grayscale = el('grayscale');
+    const sharpen = el('sharpen');
+    const blur = el('blur');
+    const namePrefix = el('namePrefix');
+
+    qv.textContent = quality.value;
+    quality.addEventListener('input', () => qv.textContent = quality.value);
+
+    ratioPreset.addEventListener('change', () => {
+      const v = ratioPreset.value;
+      if (v === 'free') return;
+      const [a,b] = v.split(':').map(Number);
+      ratioW.value = a; ratioH.value = b;
+    });
+
+    /** In-memory items: { id, file, url, img, w, h, overrides } */
+    let items = [];
+    let outputs = []; // {name, blob, url, mime}
+
+    clearBtn.addEventListener('click', () => {
+      for (const it of items) URL.revokeObjectURL(it.url);
+      for (const o of outputs) URL.revokeObjectURL(o.url);
+      items = []; outputs = [];
+      imgList.innerHTML = '';
+      outLinks.innerHTML = '';
+      outWrap.style.display = 'none';
+      processBtn.disabled = true;
+      zipBtn.disabled = true;
+      dlAllBtn.disabled = true;
+      progEl.style.width = '0%';
+      statusEl.textContent = '尚未選擇圖片';
+      zipHint.style.display = 'none';
+    });
+
+    fileInput.addEventListener('change', async () => {
+      // reset old
+      clearBtn.click();
+
+      const files = Array.from(fileInput.files || []);
+      if (!files.length) return;
+
+      statusEl.textContent = '讀取圖片中…';
+      processBtn.disabled = true;
+
+      items = [];
+      for (let i=0;i<files.length;i++){
+        const f = files[i];
+        const url = URL.createObjectURL(f);
+        const img = await loadImage(url);
+        items.push({
+          id: crypto.randomUUID(),
+          file: f,
+          url,
+          img,
+          w: img.naturalWidth || img.width,
+          h: img.naturalHeight || img.height,
+          overrides: defaultOverrides()
+        });
+      }
+
+      renderList();
+      statusEl.textContent = `已載入 ${items.length} 張圖片`;
+      processBtn.disabled = false;
+    });
+
+    processBtn.addEventListener('click', async () => {
+      if (!items.length) return;
+
+      // cleanup previous outputs
+      for (const o of outputs) URL.revokeObjectURL(o.url);
+      outputs = [];
+      outLinks.innerHTML = '';
+      outWrap.style.display = 'none';
+      zipBtn.disabled = true;
+      dlAllBtn.disabled = true;
+      zipHint.style.display = 'none';
+
+      const global = readGlobalSettings();
+
+      statusEl.textContent = '處理中…';
+      progEl.style.width = '0%';
+      processBtn.disabled = true;
+
+      const total = items.length;
+      for (let i=0;i<total;i++){
+        const it = items[i];
+        const setting = mergeSettings(global, it.overrides);
+
+        const { blob, name, mime } = await processOne(it, setting, i);
+        const url = URL.createObjectURL(blob);
+        outputs.push({ name, blob, url, mime });
+
+        progEl.style.width = `${Math.round(((i+1)/total)*100)}%`;
+        statusEl.textContent = `處理中… (${i+1}/${total})`;
+        await sleep(10); // yield to UI
+      }
+
+      renderOutputs();
+      outWrap.style.display = 'block';
+      processBtn.disabled = false;
+      statusEl.textContent = `完成：已產生 ${outputs.length} 張輸出`;
+
+      // ZIP availability
+      if (typeof JSZip === 'undefined') {
+        zipBtn.disabled = true;
+        zipHint.style.display = 'block';
+        zipHint.textContent = '⚠️ ZIP 功能需要 JSZip（CDN）。目前未載入，仍可逐張下載。';
+      } else {
+        zipBtn.disabled = false;
+      }
+      dlAllBtn.disabled = false;
+    });
+
+    zipBtn.addEventListener('click', async () => {
+      if (!outputs.length) return;
+      if (typeof JSZip === 'undefined') {
+        alert('ZIP 功能未載入（離線或 CDN 被擋）。請用逐張下載。');
+        return;
+      }
+
+      zipBtn.disabled = true;
+      statusEl.textContent = '打包 ZIP 中…';
+
+      const zip = new JSZip();
+      for (const o of outputs) {
+        zip.file(o.name, o.blob);
+      }
+
+      const zipBlob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{level:6} });
+      const zipUrl = URL.createObjectURL(zipBlob);
+
+      // trigger download
+      triggerDownload(zipUrl, `images_${Date.now()}.zip`);
+      setTimeout(() => URL.revokeObjectURL(zipUrl), 60_000);
+
+      statusEl.textContent = 'ZIP 已觸發下載';
+      zipBtn.disabled = false;
+    });
+
+    dlAllBtn.addEventListener('click', async () => {
+      if (!outputs.length) return;
+      // sequentially trigger downloads
+      for (const o of outputs) {
+        triggerDownload(o.url, o.name);
+        await sleep(350); // some browsers need delay
+      }
+      statusEl.textContent = '已逐張觸發下載（若被瀏覽器阻擋，請改用 ZIP 或手動點連結）';
+    });
+
+    function defaultOverrides(){
+      return {
+        enableOverride:false,
+        // per-photo overrides; null means inherit from global
+        outFormat:null, quality:null,
+        sizeMode:null, sizeValue:null, wValue:null, hValue:null,
+        ratioMode:null, ratioW:null, ratioH:null,
+        rot:null, flip:null,
+        brightness:null, contrast:null, saturate:null, grayscale:null,
+        sharpen:null, blur:null,
+        namePrefix:null,
+        padColor:'#000000' // for pad mode
+      };
+    }
+
+    function readGlobalSettings(){
+      return {
+        outFormat: outFormat.value,
+        quality: parseFloat(quality.value),
+        sizeMode: sizeMode.value,
+        sizeValue: parseInt(sizeValue.value,10),
+        wValue: parseInt(wValue.value,10),
+        hValue: parseInt(hValue.value,10),
+
+        ratioMode: ratioMode.value,
+        ratioW: parseInt(ratioW.value,10),
+        ratioH: parseInt(ratioH.value,10),
+
+        rot: parseInt(rot.value,10),
+        flip: flip.value,
+
+        brightness: parseFloat(brightness.value),
+        contrast: parseFloat(contrast.value),
+        saturate: parseFloat(saturate.value),
+        grayscale: parseFloat(grayscale.value),
+        sharpen: parseFloat(sharpen.value),
+        blur: parseFloat(blur.value),
+
+        namePrefix: namePrefix.value || 'processed_',
+        padColor:'#000000'
+      };
+    }
+
+    function mergeSettings(global, overrides){
+      if (!overrides.enableOverride) return global;
+
+      const pick = (k) => (overrides[k] === null || overrides[k] === undefined) ? global[k] : overrides[k];
+      return {
+        outFormat: pick('outFormat'),
+        quality: pick('quality'),
+        sizeMode: pick('sizeMode'),
+        sizeValue: pick('sizeValue'),
+        wValue: pick('wValue'),
+        hValue: pick('hValue'),
+        ratioMode: pick('ratioMode'),
+        ratioW: pick('ratioW'),
+        ratioH: pick('ratioH'),
+        rot: pick('rot'),
+        flip: pick('flip'),
+        brightness: pick('brightness'),
+        contrast: pick('contrast'),
+        saturate: pick('saturate'),
+        grayscale: pick('grayscale'),
+        sharpen: pick('sharpen'),
+        blur: pick('blur'),
+        namePrefix: pick('namePrefix'),
+        padColor: overrides.padColor || global.padColor
+      };
+    }
+
+    async function processOne(item, setting, index){
+      // Step A: compute output size
+      let srcW = item.w, srcH = item.h;
+
+      // rotation swaps dimensions for 90/270 in final
+      const rotDeg = ((setting.rot % 360) + 360) % 360;
+      const rotSwaps = (rotDeg === 90 || rotDeg === 270);
+
+      // compute base target W/H before ratio operations
+      let targetW = srcW, targetH = srcH;
+
+      if (setting.sizeMode === 'keep') {
+        targetW = srcW; targetH = srcH;
+      } else if (setting.sizeMode === 'scale') {
+        const s = Math.max(0.01, setting.sizeValue || 1);
+        targetW = Math.round(srcW * s);
+        targetH = Math.round(srcH * s);
+      } else if (setting.sizeMode === 'wh') {
+        targetW = Math.max(1, setting.wValue || srcW);
+        targetH = Math.max(1, setting.hValue || srcH);
+      } else { // longEdge
+        const le = Math.max(1, setting.sizeValue || Math.max(srcW, srcH));
+        const scale = le / Math.max(srcW, srcH);
+        targetW = Math.round(srcW * scale);
+        targetH = Math.round(srcH * scale);
+      }
+
+      // Step B: ratio handling influences how we draw image into target canvas
+      const ratio = Math.max(1e-6, (setting.ratioW || 1) / (setting.ratioH || 1));
+
+      // If ratioMode is keep, we use targetW/targetH as computed.
+      // If crop/pad, we enforce the canvas ratio while keeping a logical size.
+      let canvasW = targetW;
+      let canvasH = targetH;
+
+      if (setting.ratioMode === 'crop' || setting.ratioMode === 'pad') {
+        // enforce ratio based on whichever is closer while maintaining approx area
+        // We'll set canvas by fitting target size into that ratio.
+        const cur = targetW / targetH;
+        if (cur > ratio) {
+          // too wide -> adjust width
+          canvasW = Math.round(targetH * ratio);
+          canvasH = targetH;
+        } else {
+          // too tall -> adjust height
+          canvasW = targetW;
+          canvasH = Math.round(targetW / ratio);
+        }
+        // Avoid 0
+        canvasW = Math.max(1, canvasW);
+        canvasH = Math.max(1, canvasH);
+      }
+
+      // For stretch: canvas is targetW/targetH; we will stretch draw
+      if (setting.ratioMode === 'stretch') {
+        canvasW = targetW; canvasH = targetH;
+      }
+
+      // apply rotation swap to canvas dimension after enforcing ratio
+      const finalW = rotSwaps ? canvasH : canvasW;
+      const finalH = rotSwaps ? canvasW : canvasH;
+
+      // Create working canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = finalW;
+      canvas.height = finalH;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+      // background for pad mode (useful for PNG/JPG)
+      if (setting.ratioMode === 'pad') {
+        ctx.fillStyle = setting.padColor || '#000';
+        ctx.fillRect(0,0,finalW,finalH);
+      }
+
+      // filters
+      ctx.filter = [
+        `brightness(${clamp(setting.brightness,0.1,3)})`,
+        `contrast(${clamp(setting.contrast,0.1,3)})`,
+        `saturate(${clamp(setting.saturate,0,5)})`,
+        `grayscale(${clamp(setting.grayscale,0,1)})`,
+        `blur(${clamp(setting.blur,0,20)}px)`
+      ].join(' ');
+
+      // transform for rotation/flip
+      ctx.save();
+      // Move origin to center
+      ctx.translate(finalW/2, finalH/2);
+
+      // rotation
+      const rad = rotDeg * Math.PI / 180;
+      ctx.rotate(rad);
+
+      // flip
+      let sx = 1, sy = 1;
+      if (setting.flip === 'h') sx = -1;
+      if (setting.flip === 'v') sy = -1;
+      if (setting.flip === 'hv') { sx = -1; sy = -1; }
+      ctx.scale(sx, sy);
+
+      // Determine draw box size BEFORE rotation (in rotated coordinate space)
+      const drawW = canvasW;
+      const drawH = canvasH;
+
+      // source rect for crop
+      let sX=0, sY=0, sW=srcW, sH=srcH;
+
+      if (setting.ratioMode === 'crop') {
+        const srcRatio = srcW/srcH;
+        if (srcRatio > ratio) {
+          // source too wide -> crop width
+          sH = srcH;
+          sW = Math.round(srcH * ratio);
+          sX = Math.round((srcW - sW)/2);
+          sY = 0;
+        } else {
+          // source too tall -> crop height
+          sW = srcW;
+          sH = Math.round(srcW / ratio);
+          sX = 0;
+          sY = Math.round((srcH - sH)/2);
+        }
+      }
+
+      // destination rect for pad/keep/crop is drawW/drawH centered
+      let dW = drawW, dH = drawH;
+
+      if (setting.ratioMode === 'pad' || setting.ratioMode === 'keep' || setting.ratioMode === 'crop') {
+        // keep image aspect inside destination
+        const wantedRatio = dW/dH;
+        const srcR = sW/sH;
+        if (srcR > wantedRatio) {
+          // fit width
+          dH = Math.round(dW / srcR);
+        } else {
+          // fit height
+          dW = Math.round(dH * srcR);
+        }
+      }
+      // stretch: use full drawW/drawH without preserving aspect
+      if (setting.ratioMode === 'stretch') {
+        dW = drawW; dH = drawH;
+      }
+
+      // draw at center (-dW/2, -dH/2) in rotated space
+      ctx.drawImage(item.img, sX, sY, sW, sH, -dW/2, -dH/2, dW, dH);
+      ctx.restore();
+
+      // optional sharpen post-process
+      const sharp = clamp(setting.sharpen, 0, 1);
+      if (sharp > 0) {
+        applySharpen(ctx, canvas.width, canvas.height, sharp);
+      }
+
+      // export
+      const mime = setting.outFormat;
+      const ext = mime === 'image/png' ? 'png' : (mime === 'image/webp' ? 'webp' : 'jpg');
+
+      const base = stripExt(item.file.name);
+      const prefix = (setting.namePrefix || 'processed_');
+      const name = `${prefix}${String(index+1).padStart(3,'0')}_${base}.${ext}`;
+
+      const blob = await canvasToBlob(canvas, mime, setting.quality);
+      return { blob, name, mime };
+    }
+
+    function renderList(){
+      imgList.innerHTML = '';
+      for (const it of items) {
+        const div = document.createElement('div');
+        div.className = 'item';
+
+        div.innerHTML = `
+          <div class="itemHead">
+            <img class="thumb" src="${it.url}" alt="thumb"/>
+            <div style="min-width:0">
+              <div class="title" title="${escapeHtml(it.file.name)}">${escapeHtml(it.file.name)}</div>
+              <div class="meta">${it.w}×${it.h} • ${(it.file.size/1024/1024).toFixed(2)} MB</div>
+            </div>
+          </div>
+
+          <details>
+            <summary>單張覆寫（只改這張）</summary>
+            <div class="miniRow" style="margin-top:10px">
+              <div class="chip" style="justify-content:space-between;width:100%">
+                <span>啟用覆寫</span>
+                <input type="checkbox" data-k="enableOverride" />
+              </div>
+            </div>
+
+            <div class="miniRow">
+              <div>
+                <label>輸出格式</label>
+                <select data-k="outFormat">
+                  <option value="">(沿用全域)</option>
+                  <option value="image/jpeg">JPG</option>
+                  <option value="image/webp">WebP</option>
+                  <option value="image/png">PNG</option>
+                </select>
+              </div>
+              <div>
+                <label>品質</label>
+                <input data-k="quality" type="number" step="0.01" min="0.1" max="1" placeholder="(沿用全域)" />
+              </div>
+            </div>
+
+            <div class="miniRow">
+              <div>
+                <label>尺寸模式</label>
+                <select data-k="sizeMode">
+                  <option value="">(沿用全域)</option>
+                  <option value="longEdge">長邊</option>
+                  <option value="wh">寬高</option>
+                  <option value="scale">倍率</option>
+                  <option value="keep">原尺寸</option>
+                </select>
+              </div>
+              <div>
+                <label>長邊/倍率</label>
+                <input data-k="sizeValue" type="number" placeholder="(沿用全域)" />
+              </div>
+            </div>
+
+            <div class="miniRow">
+              <div>
+                <label>寬(px)</label>
+                <input data-k="wValue" type="number" placeholder="(沿用全域)" />
+              </div>
+              <div>
+                <label>高(px)</label>
+                <input data-k="hValue" type="number" placeholder="(沿用全域)" />
+              </div>
+            </div>
+
+            <div class="miniRow">
+              <div>
+                <label>比例處理</label>
+                <select data-k="ratioMode">
+                  <option value="">(沿用全域)</option>
+                  <option value="keep">維持</option>
+                  <option value="stretch">拉伸</option>
+                  <option value="crop">裁切</option>
+                  <option value="pad">補邊</option>
+                </select>
+              </div>
+              <div class="miniRow" style="margin:0;gap:10px">
+                <div>
+                  <label>比例寬</label>
+                  <input data-k="ratioW" type="number" placeholder="(沿用全域)" />
+                </div>
+                <div>
+                  <label>比例高</label>
+                  <input data-k="ratioH" type="number" placeholder="(沿用全域)" />
+                </div>
+              </div>
+            </div>
+
+            <div class="miniRow">
+              <div>
+                <label>旋轉</label>
+                <select data-k="rot">
+                  <option value="">(沿用全域)</option>
+                  <option value="0">0°</option>
+                  <option value="90">90°</option>
+                  <option value="180">180°</option>
+                  <option value="270">270°</option>
+                </select>
+              </div>
+              <div>
+                <label>鏡像</label>
+                <select data-k="flip">
+                  <option value="">(沿用全域)</option>
+                  <option value="none">不鏡像</option>
+                  <option value="h">水平</option>
+                  <option value="v">垂直</option>
+                  <option value="hv">水平+垂直</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="miniRow">
+              <div>
+                <label>亮度 (0.5~1.5)</label>
+                <input data-k="brightness" type="number" step="0.01" placeholder="(沿用全域)" />
+              </div>
+              <div>
+                <label>對比 (0.5~1.5)</label>
+                <input data-k="contrast" type="number" step="0.01" placeholder="(沿用全域)" />
+              </div>
+            </div>
+
+            <div class="miniRow">
+              <div>
+                <label>飽和 (0~2)</label>
+                <input data-k="saturate" type="number" step="0.01" placeholder="(沿用全域)" />
+              </div>
+              <div>
+                <label>灰階 (0~1)</label>
+                <input data-k="grayscale" type="number" step="0.01" placeholder="(沿用全域)" />
+              </div>
+            </div>
+
+            <div class="miniRow3">
+              <div>
+                <label>銳化 (0~1)</label>
+                <input data-k="sharpen" type="number" step="0.05" placeholder="(沿用全域)" />
+              </div>
+              <div>
+                <label>模糊 (0~6)</label>
+                <input data-k="blur" type="number" step="0.1" placeholder="(沿用全域)" />
+              </div>
+              <div>
+                <label>檔名前綴</label>
+                <input data-k="namePrefix" type="text" placeholder="(沿用全域)" />
+              </div>
+            </div>
+
+            <div class="hint">提示：只有勾「啟用覆寫」才會使用這張的設定。</div>
+          </details>
+        `;
+
+        // bind events
+        const controls = div.querySelectorAll('[data-k]');
+        controls.forEach(c => {
+          c.addEventListener('input', () => syncOverrides(it, div));
+          c.addEventListener('change', () => syncOverrides(it, div));
+        });
+
+        imgList.appendChild(div);
+      }
+    }
+
+    function syncOverrides(it, container){
+      const get = (k) => container.querySelector(`[data-k="${k}"]`);
+      const o = it.overrides;
+
+      o.enableOverride = !!get('enableOverride').checked;
+
+      const readVal = (k, parser=null) => {
+        const node = get(k);
+        if (!node) return null;
+        if (node.type === 'checkbox') return !!node.checked;
+        const v = node.value;
+        if (v === '') return null;
+        return parser ? parser(v) : v;
+      };
+
+      o.outFormat = readVal('outFormat');
+      o.quality = readVal('quality', parseFloat);
+
+      o.sizeMode = readVal('sizeMode');
+      o.sizeValue = readVal('sizeValue', (x)=>parseInt(x,10));
+      o.wValue = readVal('wValue', (x)=>parseInt(x,10));
+      o.hValue = readVal('hValue', (x)=>parseInt(x,10));
+
+      o.ratioMode = readVal('ratioMode');
+      o.ratioW = readVal('ratioW', (x)=>parseInt(x,10));
+      o.ratioH = readVal('ratioH', (x)=>parseInt(x,10));
+
+      o.rot = readVal('rot', (x)=>parseInt(x,10));
+      o.flip = readVal('flip');
+
+      o.brightness = readVal('brightness', parseFloat);
+      o.contrast = readVal('contrast', parseFloat);
+      o.saturate = readVal('saturate', parseFloat);
+      o.grayscale = readVal('grayscale', parseFloat);
+      o.sharpen = readVal('sharpen', parseFloat);
+      o.blur = readVal('blur', parseFloat);
+
+      o.namePrefix = readVal('namePrefix');
+    }
+
+    function renderOutputs(){
+      outLinks.innerHTML = '';
+      for (const o of outputs) {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <div class="itemHead">
+            <div style="flex:1;min-width:0">
+              <div class="title" title="${escapeHtml(o.name)}">${escapeHtml(o.name)}</div>
+              <div class="meta">${o.mime} • ${(o.blob.size/1024).toFixed(0)} KB</div>
+            </div>
+            <a class="dl" href="${o.url}" download="${escapeHtml(o.name)}">下載</a>
+          </div>
+        `;
+        outLinks.appendChild(div);
+      }
+    }
+
+    function loadImage(url){
+      return new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = rej;
+        img.src = url;
+      });
+    }
+
+    function stripExt(name){
+      const i = name.lastIndexOf('.');
+      return i>0 ? name.slice(0,i) : name;
+    }
+
+    function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+    function clamp(v, a, b){
+      v = Number(v);
+      if (Number.isNaN(v)) v = a;
+      return Math.min(b, Math.max(a, v));
+    }
+
+    function canvasToBlob(canvas, mime, q){
+      return new Promise((res) => {
+        if (mime === 'image/png') {
+          canvas.toBlob((b)=>res(b), mime);
+        } else {
+          const qq = clamp(q, 0.1, 1);
+          canvas.toBlob((b)=>res(b), mime, qq);
+        }
+      });
+    }
+
+    function triggerDownload(url, filename){
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // Simple unsharp mask-ish sharpen via convolution (3x3)
+    function applySharpen(ctx, w, h, amount){
+      const imgData = ctx.getImageData(0,0,w,h);
+      const src = imgData.data;
+      const out = new Uint8ClampedArray(src.length);
+
+      // kernel = [0,-1,0,-1,5,-1,0,-1,0]
+      const k = [0,-1,0,-1,5,-1,0,-1,0];
+      const idx = (x,y,c)=>((y*w+x)*4+c);
+
+      for (let y=0;y<h;y++){
+        for (let x=0;x<w;x++){
+          for (let c=0;c<3;c++){
+            let sum = 0;
+            let ki = 0;
+            for (let ky=-1;ky<=1;ky++){
+              for (let kx=-1;kx<=1;kx++){
+                const xx = Math.min(w-1, Math.max(0, x+kx));
+                const yy = Math.min(h-1, Math.max(0, y+ky));
+                sum += src[idx(xx,yy,c)] * k[ki++];
+              }
+            }
+            const orig = src[idx(x,y,c)];
+            const sharp = sum;
+            const mixed = orig*(1-amount) + sharp*amount;
+            out[idx(x,y,c)] = clamp(mixed, 0, 255);
+          }
+          out[idx(x,y,3)] = src[idx(x,y,3)];
+        }
+      }
+      imgData.data.set(out);
+      ctx.putImageData(imgData,0,0);
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, (m)=>({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[m]));
+    }
+  </script>
+</body>
+</html>
